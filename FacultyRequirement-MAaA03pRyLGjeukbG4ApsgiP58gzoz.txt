@@ -1,0 +1,125 @@
+Great.lets add some more features.
+in the HOD dashboard,if i click 'Academic info',give me new interface(same UI theme) that has the following:
+Module Information
+
+Basic Course Information
+
+Course Name
+
+Course Code
+
+NBA Code
+
+Module Mapping
+
+Course – Faculty Mapping
+
+Nominate Course Coordinator
+
+Core Course Information
+
+Course Outcomes
+
+CO-PO-PSO Mapping
+
+Gap Identifications
+
+Content beyond the Syllabus
+
+Course Progress Assessment
+
+3 Assessments (each before the CIE)
+
+Remedial Classes
+
+2. Module Setup
+Step 1: Enter the Number of Modules in the department.
+
+Step 2: For each module, collect:
+
+Module Name – Alphabet (Fill)
+
+Select the Coordinator – Dropdown (From Faculty Information sub-module)
+
+Select Program – UG / PG (Radio Button)
+
+Option shown only if PG program exists for the department (based on establishment section data).
+
+3. Program and Course Structure
+Number of Courses in the Program – Fill (Example: 64, 30, 25 from 1st semester to last semester)
+
+Basic Course Details:
+
+Select the Cycle:
+
+Alpha-numeric
+
+Physics / Chemistry (for 1st year)
+
+Odd / Even (for higher semesters)
+
+For every selection, provide a Radio Button for demarcation:
+
+Physics (RB) / Chemistry (RB) for 1st year
+
+Odd (RB) / Even (RB) for higher years
+
+4. Semester-wise Course Entry – Odd Semesters (3, 5, 7)
+IF Selection is Odd Semester
+Select the Semester – Dropdown (Alpha-Numeric: 3, 5, 7; disable higher semesters until lower ones are completed)
+
+Enter the Scheme – Dropdown:
+
+2015 Scheme
+
+2017 Scheme
+
+2018 Scheme
+
+Other
+
+Enter Course Code – Fill (Alpha-numeric, prefixed based on scheme; e.g., 18CS32)
+
+Enter NBA Code – Fill (Alpha-numeric, prefixed for semester; e.g., C2XX for 3rd sem)
+
+Course Type – Dropdown (Alphabet, e.g., BSC)
+
+Enter the Module to Map – Radio Button (Displays all modules created earlier)
+
+Constraints:
+
+One course can be mapped into only one module.
+
+After entry, provide an "Add Course" option.
+
+After all courses of a semester are entered, show a "Submit" button to lock entries and enable next semester.
+
+5th sem cannot be added unless 3rd sem is filled.
+
+For repeating cycles, provide a "Retain" option to reuse previous data (except for first-time entry).
+
+5. Semester Repetition for Odd Semesters
+Repeat Step 4 for:
+
+5th Semester (Selection = 5, Scheme Dropdown, Course Code, NBA Code, Course Type, Module Mapping)
+
+7th Semester (Selection = 7, Scheme Dropdown, Course Code, NBA Code, Course Type, Module Mapping)
+
+6. Semester-wise Course Entry – Even Semesters (4, 6, 8)
+Mirror the Odd Semester process for Even Semesters with these changes:
+
+Select the Semester – Dropdown (Alpha-Numeric: 4, 6, 8; disable higher semesters until lower ones are completed)
+
+Follow same process:
+
+Enter Scheme
+
+Enter Course Code (prefix as per scheme)
+
+Enter NBA Code (prefix for semester)
+
+Select Course Type
+
+Map to Module
+
+Apply same constraints as Odd Semester entry.
