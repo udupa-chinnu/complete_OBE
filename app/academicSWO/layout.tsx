@@ -18,6 +18,7 @@ import {
 
 import { Button } from "@/components/admin/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/admin/avatar"
+import { logout } from "@/lib/auth"
 import {
   SidebarProvider,
   Sidebar,
@@ -58,34 +59,21 @@ const navItems = [
     href: "/academicSWO/feedback-reports",
     icon: <FileText className="h-5 w-5" />,
   },
-  {
-    title: "Course Management",
-    href: "/academicSWO/course-management",
-    icon: <BookOpen className="h-5 w-5" />,
-  },
-  {
-    title: "Faculty Management",
-    href: "/academicSWO/faculty-management",
-    icon: <Users className="h-5 w-5" />,
-  },
+  
   {
     title: "Exam Management",
     href: "/academicSWO/exam-management",
     icon: <ClipboardList className="h-5 w-5" />,
   },
-  {
-    title: "Settings",
-    href: "/academicSWO/settings",
-    icon: <Settings className="h-5 w-5" />,
-  },
+ 
 ]
 
 export default function AcademicLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
 
-  const handleLogout = () => {
-    // In a real application, you would handle logout logic here
+  const handleLogout = async () => {
+    await logout()
     router.push("/")
   }
 
@@ -114,10 +102,7 @@ export default function AcademicLayout({ children }: { children: React.ReactNode
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuSeparator />
+                
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>

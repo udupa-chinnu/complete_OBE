@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Search, Edit, Trash2, Eye, Filter } from "lucide-react"
 import { Button } from "@/components/admin/button"
 import { Input } from "@/components/admin/input"
@@ -19,104 +19,126 @@ import { Badge } from "@/components/admin/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/admin/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/admin/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/admin/select"
-
-// Sample data for faculty
-const initialFaculty = [
-  {
-    id: 1,
-    title: "Dr.",
-    firstName: "Rajesh",
-    lastName: "Kumar",
-    designation: "Professor",
-    department: "Computer Science Engineering",
-    email: "rajesh.kumar@college.edu",
-    phone: "9876543210",
-    qualification: "Ph.D. in Computer Science",
-    specialization: "Artificial Intelligence",
-    joiningDate: "2010-06-15",
-    status: "active",
-  },
-  {
-    id: 2,
-    title: "Prof.",
-    firstName: "Priya",
-    lastName: "Sharma",
-    designation: "Associate Professor",
-    department: "Information Science Engineering",
-    email: "priya.sharma@college.edu",
-    phone: "9876543211",
-    qualification: "Ph.D. in Information Technology",
-    specialization: "Data Science",
-    joiningDate: "2012-08-20",
-    status: "active",
-  },
-  {
-    id: 3,
-    title: "Dr.",
-    firstName: "Suresh",
-    lastName: "Patel",
-    designation: "Assistant Professor",
-    department: "Electronics & Communication",
-    email: "suresh.patel@college.edu",
-    phone: "9876543212",
-    qualification: "Ph.D. in Electronics",
-    specialization: "VLSI Design",
-    joiningDate: "2015-03-10",
-    status: "active",
-  },
-  {
-    id: 4,
-    title: "Mrs.",
-    firstName: "Anita",
-    lastName: "Desai",
-    designation: "Assistant Professor",
-    department: "Computer Science Engineering",
-    email: "anita.desai@college.edu",
-    phone: "9876543213",
-    qualification: "M.Tech in Computer Science",
-    specialization: "Software Engineering",
-    joiningDate: "2018-07-05",
-    status: "inactive",
-  },
-]
+import Link from "next/link"
+import { facultiesApi } from "@/lib/api"
+import { FacultyEditForm } from "@/components/faculty-edit-form"
 
 export default function FacultyPage() {
-  const [faculty, setFaculty] = useState(initialFaculty)
+  const [faculty, setFaculty] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState("")
   const [designationFilter, setDesignationFilter] = useState("")
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [currentFaculty, setCurrentFaculty] = useState<any>(null)
 
+  useEffect(() => {
+    fetchFaculties()
+  }, [])
+
+  const fetchFaculties = async () => {
+    try {
+      setLoading(true)
+      const response = await facultiesApi.getAll()
+      if (response.success && response.data && Array.isArray(response.data)) {
+        setFaculty(response.data)
+      } else {
+        setFaculty([])
+      }
+    } catch (error) {
+      console.error("Error fetching faculties:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Filter faculty based on search term and filters
   const filteredFaculty = faculty.filter((f) => {
+    const fullName = `${f.first_name || ''} ${f.last_name || ''}`.toLowerCase()
     const matchesSearch =
-      f.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.department.toLowerCase().includes(searchTerm.toLowerCase())
+      fullName.includes(searchTerm.toLowerCase()) ||
+      f.official_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.parent_department?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesDepartment = departmentFilter ? f.department === departmentFilter : true
-    const matchesDesignation = designationFilter ? f.designation === designationFilter : true
+    const matchesDepartment = departmentFilter && departmentFilter !== "all" ? f.parent_department === departmentFilter : true
+    const matchesDesignation = designationFilter && designationFilter !== "all" ? f.designation === designationFilter : true
 
     return matchesSearch && matchesDepartment && matchesDesignation
   })
 
-  const departments = [
-    "Computer Science Engineering",
-    "Information Science Engineering",
-    "Electronics & Communication",
-    "Mechanical Engineering",
-    "Robotics & Automation",
-  ]
+  const departments = Array.from(new Set(faculty.map(f => f.parent_department).filter(Boolean)))
+  const designations = Array.from(new Set(faculty.map(f => f.designation).filter(Boolean)))
 
-  const designations = ["Professor", "Associate Professor", "Assistant Professor"]
+  const handleDeleteFaculty = async (id: number) => {
+    try {
+      const response = await facultiesApi.deactivate(id)
+      if (response.success) {
+        await fetchFaculties()
+        setIsDeleteDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to deactivate faculty")
+      }
+    } catch (error) {
+      console.error("Error deactivating faculty:", error)
+      alert("Failed to deactivate faculty. Please try again.")
+    }
+  }
 
-  const handleDeleteFaculty = (id: number) => {
-    setFaculty(faculty.map((f) => (f.id === id ? { ...f, status: f.status === "active" ? "inactive" : "active" } : f)))
-    setIsDeleteDialogOpen(false)
+  const handleReactivateFaculty = async (id: number) => {
+    try {
+      const response = await facultiesApi.reactivate(id)
+      if (response.success) {
+        await fetchFaculties()
+        setIsDeleteDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to reactivate faculty")
+      }
+    } catch (error) {
+      console.error("Error reactivating faculty:", error)
+      alert("Failed to reactivate faculty. Please try again.")
+    }
+  }
+
+  const handleEditFaculty = async (updatedFaculty: any) => {
+    try {
+      const formData = new FormData()
+      Object.keys(updatedFaculty).forEach((key) => {
+        if (updatedFaculty[key] !== null && updatedFaculty[key] !== undefined) {
+          if (key === 'profilePhoto' && updatedFaculty[key] instanceof File) {
+            formData.append('profilePhoto', updatedFaculty[key])
+          } else {
+            formData.append(key, updatedFaculty[key])
+          }
+        }
+      })
+
+      const response = await facultiesApi.update(currentFaculty.id, formData)
+      if (response.success) {
+        await fetchFaculties()
+        setIsEditDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to update faculty")
+      }
+    } catch (error) {
+      console.error("Error updating faculty:", error)
+      alert("Failed to update faculty. Please try again.")
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading faculties...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -127,10 +149,10 @@ export default function FacultyPage() {
           <p className="text-muted-foreground">Manage faculty information, qualifications, and details</p>
         </div>
         <Button asChild>
-          <a href="/admin/faculty/add">
+          <Link href="/admin/faculty/add">
             <Plus className="mr-2 h-4 w-4" />
             Add Faculty
-          </a>
+          </Link>
         </Button>
       </div>
 
@@ -176,8 +198,8 @@ export default function FacultyPage() {
             variant="outline"
             size="icon"
             onClick={() => {
-              setDepartmentFilter("")
-              setDesignationFilter("")
+              setDepartmentFilter("all")
+              setDesignationFilter("all")
               setSearchTerm("")
             }}
             title="Clear filters"
@@ -212,26 +234,28 @@ export default function FacultyPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={`/placeholder.svg?height=40&width=40`} alt={`${f.firstName} ${f.lastName}`} />
+                        <AvatarImage src={f.profile_photo_path || `/placeholder.svg?height=40&width=40`} alt={`${f.first_name} ${f.last_name}`} />
                         <AvatarFallback>
-                          {f.firstName[0]}
-                          {f.lastName[0]}
+                          {f.first_name?.[0] || ''}
+                          {f.last_name?.[0] || ''}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="font-medium">
-                          {f.title} {f.firstName} {f.lastName}
+                          {f.title} {f.first_name} {f.last_name}
                         </div>
-                        <div className="text-sm text-muted-foreground">{f.qualification}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {f.qualifications?.[0]?.degree || 'No qualification listed'}
+                        </div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>{f.designation}</TableCell>
-                  <TableCell>{f.department}</TableCell>
-                  <TableCell>{f.email}</TableCell>
+                  <TableCell>{f.parent_department}</TableCell>
+                  <TableCell>{f.official_email}</TableCell>
                   <TableCell>
-                    <Badge variant={f.status === "active" ? "default" : "secondary"}>
-                      {f.status === "active" ? "Active" : "Inactive"}
+                    <Badge variant={f.is_active ? "default" : "secondary"}>
+                      {f.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -266,11 +290,14 @@ export default function FacultyPage() {
                           <Eye className="mr-2 h-4 w-4" />
                           View
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <a href={`/admin/faculty/edit/${f.id}`}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </a>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setCurrentFaculty(f)
+                            setIsEditDialogOpen(true)
+                          }}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
@@ -280,7 +307,7 @@ export default function FacultyPage() {
                           className="text-red-600"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          {f.status === "active" ? "Deactivate" : "Activate"}
+                          {f.is_active ? "Deactivate" : "Activate"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -310,17 +337,17 @@ export default function FacultyPage() {
                 <div className="flex items-center gap-4">
                   <Avatar className="h-20 w-20">
                     <AvatarImage
-                      src={`/placeholder.svg?height=80&width=80`}
-                      alt={`${currentFaculty.firstName} ${currentFaculty.lastName}`}
+                      src={currentFaculty.profile_photo_path || `/placeholder.svg?height=80&width=80`}
+                      alt={`${currentFaculty.first_name} ${currentFaculty.last_name}`}
                     />
                     <AvatarFallback className="text-xl">
-                      {currentFaculty.firstName[0]}
-                      {currentFaculty.lastName[0]}
+                      {currentFaculty.first_name?.[0] || ''}
+                      {currentFaculty.last_name?.[0] || ''}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <h3 className="text-xl font-bold">
-                      {currentFaculty.title} {currentFaculty.firstName} {currentFaculty.lastName}
+                      {currentFaculty.title} {currentFaculty.first_name} {currentFaculty.last_name}
                     </h3>
                     <p className="text-muted-foreground">{currentFaculty.designation}</p>
                   </div>
@@ -328,25 +355,25 @@ export default function FacultyPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-1">
                     <Label>Department</Label>
-                    <p>{currentFaculty.department}</p>
+                    <p>{currentFaculty.parent_department}</p>
                   </div>
                   <div className="space-y-1">
                     <Label>Email</Label>
-                    <p>{currentFaculty.email}</p>
+                    <p>{currentFaculty.official_email}</p>
                   </div>
                   <div className="space-y-1">
                     <Label>Phone</Label>
-                    <p>{currentFaculty.phone}</p>
+                    <p>{currentFaculty.residence_number || 'N/A'}</p>
                   </div>
                   <div className="space-y-1">
                     <Label>Joining Date</Label>
-                    <p>{new Date(currentFaculty.joiningDate).toLocaleDateString()}</p>
+                    <p>{currentFaculty.joining_date ? new Date(currentFaculty.joining_date).toLocaleDateString() : 'N/A'}</p>
                   </div>
                   <div className="space-y-1">
                     <Label>Status</Label>
                     <p>
-                      <Badge variant={currentFaculty.status === "active" ? "default" : "secondary"}>
-                        {currentFaculty.status === "active" ? "Active" : "Inactive"}
+                      <Badge variant={currentFaculty.is_active ? "default" : "secondary"}>
+                        {currentFaculty.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </p>
                   </div>
@@ -354,27 +381,38 @@ export default function FacultyPage() {
               </TabsContent>
               <TabsContent value="qualification" className="space-y-4 pt-4">
                 <div className="space-y-4">
-                  <div className="rounded-md border p-4">
-                    <h3 className="font-semibold">{currentFaculty.qualification}</h3>
-                    <p className="text-sm text-muted-foreground">Specialization: {currentFaculty.specialization}</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Note: Detailed qualification records are available in the edit view.
-                  </p>
+                  {currentFaculty.qualifications && currentFaculty.qualifications.length > 0 ? (
+                    currentFaculty.qualifications.map((qual: any, index: number) => (
+                      <div key={index} className="rounded-md border p-4">
+                        <h3 className="font-semibold">{qual.degree}</h3>
+                        <p className="text-sm text-muted-foreground">Specialization: {qual.specialization || 'N/A'}</p>
+                        <p className="text-sm text-muted-foreground">University: {qual.university || 'N/A'}</p>
+                        <p className="text-sm text-muted-foreground">Year: {qual.year_of_completion || 'N/A'}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No qualifications listed.</p>
+                  )}
                 </div>
               </TabsContent>
               <TabsContent value="professional" className="space-y-4 pt-4">
                 <div className="space-y-4">
                   <div className="rounded-md border p-4">
                     <h3 className="font-semibold">{currentFaculty.designation}</h3>
-                    <p className="text-sm text-muted-foreground">Department: {currentFaculty.department}</p>
+                    <p className="text-sm text-muted-foreground">Department: {currentFaculty.parent_department}</p>
                     <p className="text-sm text-muted-foreground">
-                      Joined on: {new Date(currentFaculty.joiningDate).toLocaleDateString()}
+                      Joined on: {currentFaculty.joining_date ? new Date(currentFaculty.joining_date).toLocaleDateString() : 'N/A'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Academic Experience: {currentFaculty.academic_experience || 0} years
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Research Experience: {currentFaculty.research_experience || 0} years
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Industry Experience: {currentFaculty.industry_experience || 0} years
                     </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Note: Detailed professional records are available in the edit view.
-                  </p>
                 </div>
               </TabsContent>
             </Tabs>
@@ -384,9 +422,26 @@ export default function FacultyPage() {
               Close
             </Button>
             <Button asChild>
-              <a href={`/admin/faculty/edit/${currentFaculty?.id}`}>Edit Details</a>
+              <Link href={`/admin/faculty/edit/${currentFaculty?.id}`}>Edit Details</Link>
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Faculty Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Faculty</DialogTitle>
+            <DialogDescription>Update the faculty member's information.</DialogDescription>
+          </DialogHeader>
+          {currentFaculty && (
+            <FacultyEditForm
+              faculty={currentFaculty}
+              onSubmit={handleEditFaculty}
+              onCancel={() => setIsEditDialogOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
@@ -394,18 +449,18 @@ export default function FacultyPage() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{currentFaculty?.status === "active" ? "Deactivate" : "Activate"} Faculty</DialogTitle>
+            <DialogTitle>{currentFaculty?.is_active ? "Deactivate" : "Activate"} Faculty</DialogTitle>
             <DialogDescription>
-              {currentFaculty?.status === "active"
+              {currentFaculty?.is_active
                 ? "This will deactivate the faculty member. They can be reactivated later."
                 : "This will reactivate the faculty member."}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <p>
-              Are you sure you want to {currentFaculty?.status === "active" ? "deactivate" : "activate"}{" "}
+              Are you sure you want to {currentFaculty?.is_active ? "deactivate" : "activate"}{" "}
               <span className="font-semibold">
-                {currentFaculty?.title} {currentFaculty?.firstName} {currentFaculty?.lastName}
+                {currentFaculty?.title} {currentFaculty?.first_name} {currentFaculty?.last_name}
               </span>
               ?
             </p>
@@ -415,10 +470,16 @@ export default function FacultyPage() {
               Cancel
             </Button>
             <Button
-              variant={currentFaculty?.status === "active" ? "destructive" : "default"}
-              onClick={() => handleDeleteFaculty(currentFaculty?.id)}
+              variant={currentFaculty?.is_active ? "destructive" : "default"}
+              onClick={() => {
+                if (currentFaculty?.is_active) {
+                  handleDeleteFaculty(currentFaculty?.id)
+                } else {
+                  handleReactivateFaculty(currentFaculty?.id)
+                }
+              }}
             >
-              {currentFaculty?.status === "active" ? "Deactivate" : "Activate"}
+              {currentFaculty?.is_active ? "Deactivate" : "Activate"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { isAuthenticated, getCurrentUser } from "@/lib/auth"
 
 export default function StudentPortalLayout({
   children,
@@ -13,11 +14,17 @@ export default function StudentPortalLayout({
   const router = useRouter()
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn")
-    const userRole = localStorage.getItem("userRole")
-
-    if (!isLoggedIn || userRole !== "student") {
+    // Check authentication using the auth system
+    if (!isAuthenticated()) {
       router.push("/")
+      return
+    }
+
+    // Verify user type is student
+    const user = getCurrentUser()
+    if (!user || user.userType !== 'student') {
+      router.push("/")
+      return
     }
   }, [router])
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react"
 import { Button } from "@/components/admin/button"
 import { Input } from "@/components/admin/input"
@@ -18,68 +18,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/admin/label"
 import { Badge } from "@/components/admin/badge"
 import { DepartmentForm } from "@/components/department-form"
-
-// Sample data for departments
-const initialDepartments = [
-  {
-    id: 1,
-    name: "Computer Science Engineering",
-    code: "CSE",
-    hodName: "Dr. Rajesh Kumar",
-    establishmentYear: 2005,
-    contactEmail: "cse.hod@college.edu",
-    contactPhone: "9876543210",
-    website: "https://college.edu/cse",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Information Science Engineering",
-    code: "ISE",
-    hodName: "Dr. Priya Sharma",
-    establishmentYear: 2008,
-    contactEmail: "ise.hod@college.edu",
-    contactPhone: "9876543211",
-    website: "https://college.edu/ise",
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "Electronics & Communication",
-    code: "ECE",
-    hodName: "Dr. Suresh Patel",
-    establishmentYear: 2003,
-    contactEmail: "ece.hod@college.edu",
-    contactPhone: "9876543212",
-    website: "https://college.edu/ece",
-    status: "active",
-  },
-  {
-    id: 4,
-    name: "Mechanical Engineering",
-    code: "MECH",
-    hodName: "Dr. Anil Verma",
-    establishmentYear: 2001,
-    contactEmail: "mech.hod@college.edu",
-    contactPhone: "9876543213",
-    website: "https://college.edu/mech",
-    status: "active",
-  },
-  {
-    id: 5,
-    name: "Robotics & Automation",
-    code: "RA",
-    hodName: "Dr. Meena Iyer",
-    establishmentYear: 2015,
-    contactEmail: "ra.hod@college.edu",
-    contactPhone: "9876543214",
-    website: "https://college.edu/ra",
-    status: "inactive",
-  },
-]
+import { departmentsApi } from "@/lib/api"
 
 export default function DepartmentsPage() {
-  const [departments, setDepartments] = useState(initialDepartments)
+  const [departments, setDepartments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -87,32 +30,119 @@ export default function DepartmentsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [currentDepartment, setCurrentDepartment] = useState<any>(null)
 
+  useEffect(() => {
+    fetchDepartments()
+  }, [])
+
+  const fetchDepartments = async () => {
+    try {
+      setLoading(true)
+      const response = await departmentsApi.getAll()
+      if (response.success && response.data) {
+        setDepartments(response.data)
+      }
+    } catch (error) {
+      console.error("Error fetching departments:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Filter departments based on search term
   const filteredDepartments = departments.filter(
     (dept) =>
-      dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dept.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dept.hodName.toLowerCase().includes(searchTerm.toLowerCase()),
+      dept.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      dept.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      dept.hod_name?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleAddDepartment = (newDepartment: any) => {
-    const departmentWithId = {
-      ...newDepartment,
-      id: departments.length + 1,
-      status: "active",
+  const handleAddDepartment = async (newDepartment: any) => {
+    try {
+      const response = await departmentsApi.create({
+        name: newDepartment.name,
+        code: newDepartment.code,
+        hodFacultyId: newDepartment.hodFacultyId ? parseInt(newDepartment.hodFacultyId) : null,
+        establishmentYear: newDepartment.establishmentYear || null,
+        contactEmail: newDepartment.contactEmail || null,
+        contactPhone: newDepartment.contactPhone || null,
+        website: newDepartment.website || null,
+      })
+      if (response.success) {
+        await fetchDepartments()
+        setIsAddDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to create department")
+      }
+    } catch (error) {
+      console.error("Error creating department:", error)
+      alert("Failed to create department. Please try again.")
     }
-    setDepartments([...departments, departmentWithId])
-    setIsAddDialogOpen(false)
   }
 
-  const handleEditDepartment = (updatedDepartment: any) => {
-    setDepartments(departments.map((dept) => (dept.id === updatedDepartment.id ? updatedDepartment : dept)))
-    setIsEditDialogOpen(false)
+  const handleEditDepartment = async (updatedDepartment: any) => {
+    try {
+      const response = await departmentsApi.update(updatedDepartment.id, {
+        name: updatedDepartment.name,
+        code: updatedDepartment.code,
+        hodFacultyId: updatedDepartment.hodFacultyId ? parseInt(updatedDepartment.hodFacultyId) : null,
+        establishmentYear: updatedDepartment.establishmentYear || null,
+        contactEmail: updatedDepartment.contactEmail || null,
+        contactPhone: updatedDepartment.contactPhone || null,
+        website: updatedDepartment.website || null,
+      })
+      if (response.success) {
+        await fetchDepartments()
+        setIsEditDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to update department")
+      }
+    } catch (error) {
+      console.error("Error updating department:", error)
+      alert("Failed to update department. Please try again.")
+    }
   }
 
-  const handleDeleteDepartment = (id: number) => {
-    setDepartments(departments.map((dept) => (dept.id === id ? { ...dept, status: "inactive" } : dept)))
-    setIsDeleteDialogOpen(false)
+  const handleDeleteDepartment = async (id: number) => {
+    try {
+      const response = await departmentsApi.deactivate(id)
+      if (response.success) {
+        await fetchDepartments()
+        setIsDeleteDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to deactivate department")
+      }
+    } catch (error) {
+      console.error("Error deactivating department:", error)
+      alert("Failed to deactivate department. Please try again.")
+    }
+  }
+
+  const handleReactivateDepartment = async (id: number) => {
+    try {
+      const response = await departmentsApi.reactivate(id)
+      if (response.success) {
+        await fetchDepartments()
+        setIsDeleteDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to reactivate department")
+      }
+    } catch (error) {
+      console.error("Error reactivating department:", error)
+      alert("Failed to reactivate department. Please try again.")
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading departments...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -176,11 +206,11 @@ export default function DepartmentsPage() {
                 <TableRow key={department.id}>
                   <TableCell className="font-medium">{department.name}</TableCell>
                   <TableCell>{department.code}</TableCell>
-                  <TableCell>{department.hodName}</TableCell>
-                  <TableCell>{department.establishmentYear}</TableCell>
+                  <TableCell>{department.hod_name || "Not assigned"}</TableCell>
+                  <TableCell>{department.establishment_year || "N/A"}</TableCell>
                   <TableCell>
-                    <Badge variant={department.status === "active" ? "default" : "secondary"}>
-                      {department.status === "active" ? "Active" : "Inactive"}
+                    <Badge variant={department.is_active ? "default" : "secondary"}>
+                      {department.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -217,7 +247,13 @@ export default function DepartmentsPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
-                            setCurrentDepartment(department)
+                            setCurrentDepartment({
+                              ...department,
+                              hodFacultyId: department.hod_faculty_id,
+                              establishmentYear: department.establishment_year,
+                              contactEmail: department.contact_email,
+                              contactPhone: department.contact_phone,
+                            })
                             setIsEditDialogOpen(true)
                           }}
                         >
@@ -232,7 +268,7 @@ export default function DepartmentsPage() {
                           className="text-red-600"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          {department.status === "active" ? "Deactivate" : "Activate"}
+                          {department.is_active ? "Deactivate" : "Activate"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -263,38 +299,42 @@ export default function DepartmentsPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">HOD Name</Label>
-                <div className="col-span-3">{currentDepartment.hodName}</div>
+                <div className="col-span-3">{currentDepartment.hod_name || "Not assigned"}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Establishment Year</Label>
-                <div className="col-span-3">{currentDepartment.establishmentYear}</div>
+                <div className="col-span-3">{currentDepartment.establishment_year || "N/A"}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Contact Email</Label>
-                <div className="col-span-3">{currentDepartment.contactEmail}</div>
+                <div className="col-span-3">{currentDepartment.contact_email || "N/A"}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Contact Phone</Label>
-                <div className="col-span-3">{currentDepartment.contactPhone}</div>
+                <div className="col-span-3">{currentDepartment.contact_phone || "N/A"}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Website</Label>
                 <div className="col-span-3">
-                  <a
-                    href={currentDepartment.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary underline"
-                  >
-                    {currentDepartment.website}
-                  </a>
+                  {currentDepartment.website ? (
+                    <a
+                      href={currentDepartment.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline"
+                    >
+                      {currentDepartment.website}
+                    </a>
+                  ) : (
+                    "N/A"
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Status</Label>
                 <div className="col-span-3">
-                  <Badge variant={currentDepartment.status === "active" ? "default" : "secondary"}>
-                    {currentDepartment.status === "active" ? "Active" : "Inactive"}
+                  <Badge variant={currentDepartment.is_active ? "default" : "secondary"}>
+                    {currentDepartment.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </div>
               </div>
@@ -329,16 +369,16 @@ export default function DepartmentsPage() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{currentDepartment?.status === "active" ? "Deactivate" : "Activate"} Department</DialogTitle>
+            <DialogTitle>{currentDepartment?.is_active ? "Deactivate" : "Activate"} Department</DialogTitle>
             <DialogDescription>
-              {currentDepartment?.status === "active"
+              {currentDepartment?.is_active
                 ? "This will deactivate the department. It can be reactivated later."
                 : "This will reactivate the department."}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <p>
-              Are you sure you want to {currentDepartment?.status === "active" ? "deactivate" : "activate"}{" "}
+              Are you sure you want to {currentDepartment?.is_active ? "deactivate" : "activate"}{" "}
               <span className="font-semibold">{currentDepartment?.name}</span>?
             </p>
           </div>
@@ -347,10 +387,16 @@ export default function DepartmentsPage() {
               Cancel
             </Button>
             <Button
-              variant={currentDepartment?.status === "active" ? "destructive" : "default"}
-              onClick={() => handleDeleteDepartment(currentDepartment?.id)}
+              variant={currentDepartment?.is_active ? "destructive" : "default"}
+              onClick={() => {
+                if (currentDepartment?.is_active) {
+                  handleDeleteDepartment(currentDepartment?.id)
+                } else {
+                  handleReactivateDepartment(currentDepartment?.id)
+                }
+              }}
             >
-              {currentDepartment?.status === "active" ? "Deactivate" : "Activate"}
+              {currentDepartment?.is_active ? "Deactivate" : "Activate"}
             </Button>
           </DialogFooter>
         </DialogContent>

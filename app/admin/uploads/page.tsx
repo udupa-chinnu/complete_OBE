@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Search, Edit, Trash2, Eye, FileText } from "lucide-react"
 import { Button } from "@/components/admin/button"
 import { Input } from "@/components/admin/input"
@@ -18,58 +18,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/admin/label"
 import { Badge } from "@/components/admin/badge"
 import { UploadForm } from "@/components/upload-form"
-
-// Sample data for mandatory uploads
-const initialUploads = [
-  {
-    id: 1,
-    title: "NAAC Accreditation Report 2023",
-    type: "Accreditation Reports",
-    department: "Computer Science Engineering",
-    document: "naac-report-2023.pdf",
-    uploadDate: "2023-05-15",
-    status: "active",
-  },
-  {
-    id: 2,
-    title: "NBA Self-Assessment Report",
-    type: "Accreditation Reports",
-    department: "Information Science Engineering",
-    document: "nba-sar-2023.pdf",
-    uploadDate: "2023-06-20",
-    status: "active",
-  },
-  {
-    id: 3,
-    title: "Course Closure Report - Data Structures",
-    type: "Course Closure",
-    department: "Computer Science Engineering",
-    document: "ds-closure-2023.pdf",
-    uploadDate: "2023-07-10",
-    status: "active",
-  },
-  {
-    id: 4,
-    title: "Research Project Completion Report",
-    type: "Research Closure",
-    department: "Electronics & Communication",
-    document: "iot-research-closure.pdf",
-    uploadDate: "2023-04-05",
-    status: "inactive",
-  },
-  {
-    id: 5,
-    title: "Annual Academic Audit Report",
-    type: "Accreditation Reports",
-    department: "Mechanical Engineering",
-    document: "academic-audit-2023.pdf",
-    uploadDate: "2023-08-12",
-    status: "active",
-  },
-]
+import { uploadsApi, departmentsApi } from "@/lib/api"
 
 export default function UploadsPage() {
-  const [uploads, setUploads] = useState(initialUploads)
+  const [uploads, setUploads] = useState<any[]>([])
+  const [departments, setDepartments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -77,37 +31,139 @@ export default function UploadsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [currentUpload, setCurrentUpload] = useState<any>(null)
 
+  useEffect(() => {
+    fetchUploads()
+    fetchDepartments()
+  }, [])
+
+  const fetchUploads = async () => {
+    try {
+      setLoading(true)
+      const response = await uploadsApi.getAll({ includeInactive: 'true' }) // Include inactive to show deactivated items
+      if (response.success && response.data) {
+        setUploads(response.data)
+      }
+    } catch (error) {
+      console.error("Error fetching uploads:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await departmentsApi.getAll()
+      if (response.success && response.data) {
+        setDepartments(response.data)
+      }
+    } catch (error) {
+      console.error("Error fetching departments:", error)
+    }
+  }
+
   // Filter uploads based on search term
   const filteredUploads = uploads.filter(
     (upload) =>
-      upload.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      upload.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      upload.department.toLowerCase().includes(searchTerm.toLowerCase()),
+      upload.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      upload.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      upload.department_name?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleAddUpload = (newUpload: any) => {
-    const uploadWithId = {
-      ...newUpload,
-      id: uploads.length + 1,
-      uploadDate: new Date().toISOString().split("T")[0],
-      status: "active",
+  const handleAddUpload = async (newUpload: any) => {
+    try {
+      const formData = new FormData()
+      formData.append('title', newUpload.title)
+      formData.append('type', newUpload.type)
+      if (newUpload.department) {
+        const dept = departments.find(d => d.name === newUpload.department)
+        if (dept) formData.append('departmentId', dept.id.toString())
+      }
+      if (newUpload.document instanceof File) {
+        formData.append('document', newUpload.document)
+      }
+      formData.append('uploadDate', newUpload.uploadDate || new Date().toISOString().split('T')[0])
+
+      const response = await uploadsApi.create(formData)
+      if (response.success) {
+        await fetchUploads()
+        setIsAddDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to create upload")
+      }
+    } catch (error) {
+      console.error("Error creating upload:", error)
+      alert("Failed to create upload. Please try again.")
     }
-    setUploads([...uploads, uploadWithId])
-    setIsAddDialogOpen(false)
   }
 
-  const handleEditUpload = (updatedUpload: any) => {
-    setUploads(uploads.map((upload) => (upload.id === updatedUpload.id ? updatedUpload : upload)))
-    setIsEditDialogOpen(false)
+  const handleEditUpload = async (updatedUpload: any) => {
+    try {
+      const formData = new FormData()
+      formData.append('title', updatedUpload.title)
+      formData.append('type', updatedUpload.type)
+      if (updatedUpload.department) {
+        const dept = departments.find(d => d.name === updatedUpload.department)
+        if (dept) formData.append('departmentId', dept.id.toString())
+      }
+      if (updatedUpload.document instanceof File) {
+        formData.append('document', updatedUpload.document)
+      }
+      formData.append('uploadDate', updatedUpload.uploadDate)
+
+      const response = await uploadsApi.update(currentUpload.id, formData)
+      if (response.success) {
+        await fetchUploads()
+        setIsEditDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to update upload")
+      }
+    } catch (error) {
+      console.error("Error updating upload:", error)
+      alert("Failed to update upload. Please try again.")
+    }
   }
 
-  const handleDeleteUpload = (id: number) => {
-    setUploads(
-      uploads.map((upload) =>
-        upload.id === id ? { ...upload, status: upload.status === "active" ? "inactive" : "active" } : upload,
-      ),
+  const handleDeleteUpload = async (id: number) => {
+    try {
+      const response = await uploadsApi.deactivate(id)
+      if (response.success) {
+        await fetchUploads()
+        setIsDeleteDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to deactivate upload")
+      }
+    } catch (error) {
+      console.error("Error deactivating upload:", error)
+      alert("Failed to deactivate upload. Please try again.")
+    }
+  }
+
+  const handleReactivateUpload = async (id: number) => {
+    try {
+      const response = await uploadsApi.reactivate(id)
+      if (response.success) {
+        await fetchUploads()
+        setIsDeleteDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to reactivate upload")
+      }
+    } catch (error) {
+      console.error("Error reactivating upload:", error)
+      alert("Failed to reactivate upload. Please try again.")
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading uploads...</p>
+          </div>
+        </div>
+      </div>
     )
-    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -171,11 +227,11 @@ export default function UploadsPage() {
                 <TableRow key={upload.id}>
                   <TableCell className="font-medium">{upload.title}</TableCell>
                   <TableCell>{upload.type}</TableCell>
-                  <TableCell>{upload.department}</TableCell>
-                  <TableCell>{new Date(upload.uploadDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{upload.department_name || "N/A"}</TableCell>
+                  <TableCell>{new Date(upload.upload_date).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <Badge variant={upload.status === "active" ? "default" : "secondary"}>
-                      {upload.status === "active" ? "Active" : "Inactive"}
+                    <Badge variant={upload.is_active ? "default" : "secondary"}>
+                      {upload.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -227,7 +283,7 @@ export default function UploadsPage() {
                           className="text-red-600"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          {upload.status === "active" ? "Deactivate" : "Activate"}
+                          {upload.is_active ? "Deactivate" : "Activate"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -258,24 +314,35 @@ export default function UploadsPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Department</Label>
-                <div className="col-span-3">{currentUpload.department}</div>
+                <div className="col-span-3">{currentUpload.department_name || "N/A"}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Upload Date</Label>
-                <div className="col-span-3">{new Date(currentUpload.uploadDate).toLocaleDateString()}</div>
+                <div className="col-span-3">{new Date(currentUpload.upload_date).toLocaleDateString()}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Document</Label>
-                <div className="col-span-3 flex items-center">
+                <div className="col-span-3 flex items-center gap-2">
                   <FileText className="mr-2 h-4 w-4" />
-                  {currentUpload.document}
+                  {currentUpload.document_path ? (
+                    <a 
+                      href={`http://localhost:5000${currentUpload.document_path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      {currentUpload.document_path.split('/').pop()}
+                    </a>
+                  ) : (
+                    'N/A'
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Status</Label>
                 <div className="col-span-3">
-                  <Badge variant={currentUpload.status === "active" ? "default" : "secondary"}>
-                    {currentUpload.status === "active" ? "Active" : "Inactive"}
+                  <Badge variant={currentUpload.is_active ? "default" : "secondary"}>
+                    {currentUpload.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </div>
               </div>
@@ -298,7 +365,12 @@ export default function UploadsPage() {
           </DialogHeader>
           {currentUpload && (
             <UploadForm
-              upload={currentUpload}
+              upload={{
+                ...currentUpload,
+                department: currentUpload.department_name || 'institution',
+                document: currentUpload.document_path ? currentUpload.document_path.split('/').pop() : '',
+                uploadDate: currentUpload.upload_date ? (currentUpload.upload_date.includes('T') ? currentUpload.upload_date.split('T')[0] : currentUpload.upload_date) : new Date().toISOString().split('T')[0]
+              }}
               onSubmit={handleEditUpload}
               onCancel={() => setIsEditDialogOpen(false)}
             />
@@ -310,16 +382,16 @@ export default function UploadsPage() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{currentUpload?.status === "active" ? "Deactivate" : "Activate"} Document</DialogTitle>
+            <DialogTitle>{currentUpload?.is_active ? "Deactivate" : "Activate"} Document</DialogTitle>
             <DialogDescription>
-              {currentUpload?.status === "active"
+              {currentUpload?.is_active
                 ? "This will deactivate the document. It can be reactivated later."
                 : "This will reactivate the document."}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <p>
-              Are you sure you want to {currentUpload?.status === "active" ? "deactivate" : "activate"}{" "}
+              Are you sure you want to {currentUpload?.is_active ? "deactivate" : "activate"}{" "}
               <span className="font-semibold">{currentUpload?.title}</span>?
             </p>
           </div>
@@ -328,10 +400,16 @@ export default function UploadsPage() {
               Cancel
             </Button>
             <Button
-              variant={currentUpload?.status === "active" ? "destructive" : "default"}
-              onClick={() => handleDeleteUpload(currentUpload?.id)}
+              variant={currentUpload?.is_active ? "destructive" : "default"}
+              onClick={() => {
+                if (currentUpload?.is_active) {
+                  handleDeleteUpload(currentUpload?.id)
+                } else {
+                  handleReactivateUpload(currentUpload?.id)
+                }
+              }}
             >
-              {currentUpload?.status === "active" ? "Deactivate" : "Activate"}
+              {currentUpload?.is_active ? "Deactivate" : "Activate"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1427,23 +1427,7 @@ export default function PartAForm() {
       </Card>
 
       {/* Signature Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Signature Area</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-sm text-gray-600 mb-12">Signature of Faculty Member with Date</p>
-              <div className="border-t border-gray-400"></div>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 mb-12">Signature of HOD with Date</p>
-              <div className="border-t border-gray-400"></div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      
     </div>
   )
 }

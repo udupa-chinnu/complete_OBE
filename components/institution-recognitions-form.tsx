@@ -54,9 +54,9 @@ export function InstitutionRecognitionsForm({ data, onSubmit, isEditing }: Insti
                 name="ugcRecognitionDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>UGC Recognition Date</FormLabel>
+                    <FormLabel>UGC Approval Year</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" disabled={!isEditing} />
+                      <Input {...field} type="text" disabled={!isEditing}  />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -2,11 +2,12 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DialogFooter } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface DepartmentFormProps {
   department?: any
@@ -14,12 +15,19 @@ interface DepartmentFormProps {
   onCancel: () => void
 }
 
+interface Faculty {
+  id: number
+  faculty_id: string
+  full_name: string
+  designation: string
+}
+
 export function DepartmentForm({ department, onSubmit, onCancel }: DepartmentFormProps) {
   const [formData, setFormData] = useState({
     id: department?.id || null,
     name: department?.name || "",
     code: department?.code || "",
-    hodName: department?.hodName || "",
+    hodFacultyId: department?.hod_faculty_id || department?.hodFacultyId || "",
     establishmentYear: department?.establishmentYear || "",
     contactEmail: department?.contactEmail || "",
     contactPhone: department?.contactPhone || "",
@@ -27,8 +35,34 @@ export function DepartmentForm({ department, onSubmit, onCancel }: DepartmentFor
     status: department?.status || "active",
   })
 
+  const [faculties, setFaculties] = useState<Faculty[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Fetch active faculties for HOD dropdown
+    const fetchFaculties = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/faculties/dropdown/active')
+        const result = await response.json()
+        if (result.success) {
+          setFaculties(result.data)
+        }
+      } catch (error) {
+        console.error('Error fetching faculties:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFaculties()
+  }, [])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -53,17 +87,32 @@ export function DepartmentForm({ department, onSubmit, onCancel }: DepartmentFor
           <Input id="code" name="code" value={formData.code} onChange={handleChange} className="col-span-3" required />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="hodName" className="text-right">
+          <Label htmlFor="hodFacultyId" className="text-right">
             HOD Name
           </Label>
-          <Input
-            id="hodName"
-            name="hodName"
-            value={formData.hodName}
-            onChange={handleChange}
-            className="col-span-3"
-            required
-          />
+          <div className="col-span-3">
+            <Select
+              value={formData.hodFacultyId ? formData.hodFacultyId.toString() : ""}
+              onValueChange={(value) => handleSelectChange("hodFacultyId", value)}
+            >
+              <SelectTrigger id="hodFacultyId">
+                <SelectValue placeholder="Select HOD from faculties" />
+              </SelectTrigger>
+              <SelectContent>
+                {loading ? (
+                  <SelectItem value="loading" disabled>Loading faculties...</SelectItem>
+                ) : faculties.length === 0 ? (
+                  <SelectItem value="no-faculties" disabled>No active faculties available</SelectItem>
+                ) : (
+                  faculties.map((faculty) => (
+                    <SelectItem key={faculty.id} value={faculty.id.toString()}>
+                      {faculty.full_name} - {faculty.designation}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="establishmentYear" className="text-right">

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   Building2,
   GraduationCap,
@@ -10,11 +10,11 @@ import {
   Upload,
   Award,
   Building,
-  DoorClosed,
   LayoutDashboard,
   LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { logout } from "@/lib/auth"
 
 const sidebarItems = [
   {
@@ -53,11 +53,6 @@ const sidebarItems = [
     icon: <Award className="h-5 w-5" />,
   },
   {
-    title: "Leave Management",
-    href: "/admin/leave-requests",
-    icon: <DoorClosed className="h-5 w-5" />,
-  },
-  {
     title: "Appraisal Structure",
     href: "/admin/appraisals",
     icon: <ClipboardList className="h-5 w-5" />,
@@ -71,6 +66,12 @@ const sidebarItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    await logout()
+    router.push("/")
+  }
 
   return (
     <div className="hidden border-r bg-background lg:block">
@@ -99,13 +100,13 @@ export function Sidebar() {
           </nav>
         </div>
         <div className="mt-auto border-t p-4">
-          <Link
-            href="/"
+          <button
+            onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-lg bg-muted px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:text-primary"
           >
             <LogOut className="h-5 w-5" />
             Logout
-          </Link>
+          </button>
         </div>
       </div>
     </div>

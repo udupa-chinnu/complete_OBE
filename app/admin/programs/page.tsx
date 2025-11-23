@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Search, Edit, Trash2, Eye, FileText } from "lucide-react"
 import { Button } from "@/components/admin/button"
 import { Input } from "@/components/admin/input"
@@ -18,97 +18,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/admin/label"
 import { Badge } from "@/components/admin/badge"
 import { ProgramForm } from "@/components/program-form"
-
-// Sample data for programs
-const initialPrograms = [
-  {
-    id: 1,
-    level: "UG",
-    type: "B.Tech",
-    name: "Computer Science Engineering",
-    code: "B.Tech-CSE",
-    department: "Computer Science Engineering",
-    parentalDepartment: "Computer Science Engineering",
-    sanctionedIntake: 120,
-    commencementYear: 2005,
-    aicteApprovalYear: 2005,
-    aicteApprovalDoc: "aicte-approval-cse.pdf",
-    intakeChanged: "No",
-    newIntake: null,
-    intakeChangeDoc: null,
-    accreditationStatus: "NBA Accredited",
-    accreditationFile: "nba-cse.pdf",
-    duration: 4,
-    totalCredits: 180,
-    status: "active",
-  },
-  {
-    id: 2,
-    level: "PG",
-    type: "M.Tech",
-    name: "Computer Science Engineering",
-    code: "M.Tech-CSE",
-    department: "Computer Science Engineering",
-    parentalDepartment: "Computer Science Engineering",
-    sanctionedIntake: 30,
-    commencementYear: 2010,
-    aicteApprovalYear: 2010,
-    aicteApprovalDoc: "aicte-approval-mtech-cse.pdf",
-    intakeChanged: "No",
-    newIntake: null,
-    intakeChangeDoc: null,
-    accreditationStatus: "NBA Accredited",
-    accreditationFile: "nba-mtech-cse.pdf",
-    duration: 2,
-    totalCredits: 90,
-    status: "active",
-  },
-  {
-    id: 3,
-    level: "UG",
-    type: "B.Tech",
-    name: "Information Science Engineering",
-    code: "B.Tech-ISE",
-    department: "Information Science Engineering",
-    parentalDepartment: "Information Science Engineering",
-    sanctionedIntake: 60,
-    commencementYear: 2008,
-    aicteApprovalYear: 2008,
-    aicteApprovalDoc: "aicte-approval-ise.pdf",
-    intakeChanged: "Yes",
-    newIntake: 120,
-    intakeChangeDoc: "intake-change-ise.pdf",
-    accreditationStatus: "NAAC Accredited",
-    accreditationFile: "naac-ise.pdf",
-    duration: 4,
-    totalCredits: 180,
-    status: "active",
-  },
-  {
-    id: 4,
-    level: "UG",
-    type: "B.Tech",
-    name: "Electronics & Communication",
-    code: "B.Tech-ECE",
-    department: "Electronics & Communication",
-    parentalDepartment: "Electronics & Communication",
-    sanctionedIntake: 60,
-    commencementYear: 2003,
-    aicteApprovalYear: 2003,
-    aicteApprovalDoc: "aicte-approval-ece.pdf",
-    intakeChanged: "No",
-    newIntake: null,
-    intakeChangeDoc: null,
-    accreditationStatus: "NBA Accredited",
-    accreditationFile: "nba-ece.pdf",
-    duration: 4,
-    totalCredits: 180,
-    status: "inactive",
-  },
-]
+import { programsApi, departmentsApi } from "@/lib/api"
 
 export default function ProgramsPage() {
-  const [programs, setPrograms] = useState(initialPrograms)
+  const [programs, setPrograms] = useState<any[]>([])
+  const [departments, setDepartments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -116,38 +31,179 @@ export default function ProgramsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [currentProgram, setCurrentProgram] = useState<any>(null)
 
+  useEffect(() => {
+    fetchPrograms()
+    fetchDepartments()
+  }, [])
+
+  const fetchPrograms = async () => {
+    try {
+      setLoading(true)
+      const response = await programsApi.getAll()
+      if (response.success && response.data) {
+        setPrograms(response.data)
+      }
+    } catch (error) {
+      console.error("Error fetching programs:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await departmentsApi.getAll()
+      if (response.success && response.data) {
+        setDepartments(response.data)
+      }
+    } catch (error) {
+      console.error("Error fetching departments:", error)
+    }
+  }
+
   // Filter programs based on search term
   const filteredPrograms = programs.filter(
     (program) =>
-      program.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      program.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      program.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      program.level.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      program.type.toLowerCase().includes(searchTerm.toLowerCase()),
+      program.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      program.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      program.department_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      program.level?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      program.type?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleAddProgram = (newProgram: any) => {
-    const programWithId = {
-      ...newProgram,
-      id: programs.length + 1,
-      status: "active",
+  const handleAddProgram = async (newProgram: any) => {
+    try {
+      const formData = new FormData()
+      formData.append('level', newProgram.level)
+      formData.append('type', newProgram.type)
+      if (newProgram.otherType) formData.append('otherType', newProgram.otherType)
+      formData.append('name', newProgram.name)
+      formData.append('code', newProgram.code)
+      
+      const dept = departments.find(d => d.name === newProgram.department)
+      if (dept) formData.append('departmentId', dept.id.toString())
+      
+      if (newProgram.parentalDepartment) formData.append('parentalDepartment', newProgram.parentalDepartment)
+      formData.append('sanctionedIntake', newProgram.sanctionedIntake.toString())
+      formData.append('commencementYear', newProgram.commencementYear || '')
+      if (newProgram.aicteApprovalYear) formData.append('aicteApprovalYear', newProgram.aicteApprovalYear)
+      if (newProgram.aicteApprovalDoc instanceof File) {
+        formData.append('aicteApprovalDoc', newProgram.aicteApprovalDoc)
+      }
+      formData.append('intakeChanged', newProgram.intakeChanged || 'No')
+      if (newProgram.intakeChanged === 'Yes' && newProgram.newIntake) {
+        formData.append('newIntake', newProgram.newIntake.toString())
+      }
+      if (newProgram.intakeChangeDoc instanceof File) {
+        formData.append('intakeChangeDoc', newProgram.intakeChangeDoc)
+      }
+      if (newProgram.accreditationStatus) formData.append('accreditationStatus', newProgram.accreditationStatus)
+      if (newProgram.accreditationFile instanceof File) {
+        formData.append('accreditationFile', newProgram.accreditationFile)
+      }
+      formData.append('duration', newProgram.duration.toString())
+      if (newProgram.totalCredits) formData.append('totalCredits', newProgram.totalCredits.toString())
+
+      const response = await programsApi.create(formData)
+      if (response.success) {
+        await fetchPrograms()
+        setIsAddDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to create program")
+      }
+    } catch (error) {
+      console.error("Error creating program:", error)
+      alert("Failed to create program. Please try again.")
     }
-    setPrograms([...programs, programWithId])
-    setIsAddDialogOpen(false)
   }
 
-  const handleEditProgram = (updatedProgram: any) => {
-    setPrograms(programs.map((program) => (program.id === updatedProgram.id ? updatedProgram : program)))
-    setIsEditDialogOpen(false)
+  const handleEditProgram = async (updatedProgram: any) => {
+    try {
+      const formData = new FormData()
+      formData.append('level', updatedProgram.level)
+      formData.append('type', updatedProgram.type)
+      if (updatedProgram.otherType) formData.append('otherType', updatedProgram.otherType)
+      formData.append('name', updatedProgram.name)
+      formData.append('code', updatedProgram.code)
+      
+      const dept = departments.find(d => d.name === updatedProgram.department)
+      if (dept) formData.append('departmentId', dept.id.toString())
+      
+      if (updatedProgram.parentalDepartment) formData.append('parentalDepartment', updatedProgram.parentalDepartment)
+      formData.append('sanctionedIntake', updatedProgram.sanctionedIntake.toString())
+      formData.append('commencementYear', updatedProgram.commencementYear || '')
+      if (updatedProgram.aicteApprovalYear) formData.append('aicteApprovalYear', updatedProgram.aicteApprovalYear)
+      if (updatedProgram.aicteApprovalDoc instanceof File) {
+        formData.append('aicteApprovalDoc', updatedProgram.aicteApprovalDoc)
+      }
+      formData.append('intakeChanged', updatedProgram.intakeChanged || 'No')
+      if (updatedProgram.intakeChanged === 'Yes' && updatedProgram.newIntake) {
+        formData.append('newIntake', updatedProgram.newIntake.toString())
+      }
+      if (updatedProgram.intakeChangeDoc instanceof File) {
+        formData.append('intakeChangeDoc', updatedProgram.intakeChangeDoc)
+      }
+      if (updatedProgram.accreditationStatus) formData.append('accreditationStatus', updatedProgram.accreditationStatus)
+      if (updatedProgram.accreditationFile instanceof File) {
+        formData.append('accreditationFile', updatedProgram.accreditationFile)
+      }
+      formData.append('duration', updatedProgram.duration.toString())
+      if (updatedProgram.totalCredits) formData.append('totalCredits', updatedProgram.totalCredits.toString())
+
+      const response = await programsApi.update(currentProgram.id, formData)
+      if (response.success) {
+        await fetchPrograms()
+        setIsEditDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to update program")
+      }
+    } catch (error) {
+      console.error("Error updating program:", error)
+      alert("Failed to update program. Please try again.")
+    }
   }
 
-  const handleDeleteProgram = (id: number) => {
-    setPrograms(
-      programs.map((program) =>
-        program.id === id ? { ...program, status: program.status === "active" ? "inactive" : "active" } : program,
-      ),
+  const handleDeleteProgram = async (id: number) => {
+    try {
+      const response = await programsApi.deactivate(id)
+      if (response.success) {
+        await fetchPrograms()
+        setIsDeleteDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to deactivate program")
+      }
+    } catch (error) {
+      console.error("Error deactivating program:", error)
+      alert("Failed to deactivate program. Please try again.")
+    }
+  }
+
+  const handleReactivateProgram = async (id: number) => {
+    try {
+      const response = await programsApi.reactivate(id)
+      if (response.success) {
+        await fetchPrograms()
+        setIsDeleteDialogOpen(false)
+      } else {
+        alert(response.message || "Failed to reactivate program")
+      }
+    } catch (error) {
+      console.error("Error reactivating program:", error)
+      alert("Failed to reactivate program. Please try again.")
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading programs...</p>
+          </div>
+        </div>
+      </div>
     )
-    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -213,19 +269,19 @@ export default function ProgramsPage() {
                   <TableCell>{program.level}</TableCell>
                   <TableCell>{program.type}</TableCell>
                   <TableCell className="font-medium">{program.name}</TableCell>
-                  <TableCell>{program.department}</TableCell>
+                  <TableCell>{program.department_name}</TableCell>
                   <TableCell>
-                    {program.intakeChanged === "Yes" ? (
+                    {program.intake_changed === "Yes" ? (
                       <div>
-                        <span className="line-through">{program.sanctionedIntake}</span> → {program.newIntake}
+                        <span className="line-through">{program.sanctioned_intake}</span> → {program.new_intake}
                       </div>
                     ) : (
-                      program.sanctionedIntake
+                      program.sanctioned_intake
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={program.status === "active" ? "default" : "secondary"}>
-                      {program.status === "active" ? "Active" : "Inactive"}
+                    <Badge variant={program.is_active ? "default" : "secondary"}>
+                      {program.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -262,7 +318,21 @@ export default function ProgramsPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
-                            setCurrentProgram(program)
+                            setCurrentProgram({
+                              ...program,
+                              department: program.department_name,
+                              parentalDepartment: program.parental_department,
+                              sanctionedIntake: program.sanctioned_intake,
+                              commencementYear: program.commencement_year?.toString(),
+                              aicteApprovalYear: program.aicte_approval_year?.toString(),
+                              aicteApprovalDoc: program.aicte_approval_doc_path,
+                              intakeChanged: program.intake_changed,
+                              newIntake: program.new_intake,
+                              intakeChangeDoc: program.intake_change_doc_path,
+                              accreditationStatus: program.accreditation_status,
+                              accreditationFile: program.accreditation_file_path,
+                              totalCredits: program.total_credits?.toString(),
+                            })
                             setIsEditDialogOpen(true)
                           }}
                         >
@@ -277,7 +347,7 @@ export default function ProgramsPage() {
                           className="text-red-600"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          {program.status === "active" ? "Deactivate" : "Activate"}
+                          {program.is_active ? "Deactivate" : "Activate"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -320,11 +390,11 @@ export default function ProgramsPage() {
                     </div>
                     <div className="grid grid-cols-2 items-center gap-4">
                       <Label className="text-right">Department</Label>
-                      <div>{currentProgram.department}</div>
+                      <div>{currentProgram.department_name}</div>
                     </div>
                     <div className="grid grid-cols-2 items-center gap-4">
                       <Label className="text-right">Parental Department</Label>
-                      <div>{currentProgram.parentalDepartment}</div>
+                      <div>{currentProgram.parental_department || "N/A"}</div>
                     </div>
                   </div>
                 </div>
@@ -333,28 +403,28 @@ export default function ProgramsPage() {
                   <div className="mt-2 space-y-2">
                     <div className="grid grid-cols-2 items-center gap-4">
                       <Label className="text-right">Commencement Year</Label>
-                      <div>{currentProgram.commencementYear}</div>
+                      <div>{currentProgram.commencement_year || "N/A"}</div>
                     </div>
                     <div className="grid grid-cols-2 items-center gap-4">
                       <Label className="text-right">AICTE Approval Year</Label>
-                      <div>{currentProgram.aicteApprovalYear}</div>
+                      <div>{currentProgram.aicte_approval_year || "N/A"}</div>
                     </div>
                     <div className="grid grid-cols-2 items-center gap-4">
                       <Label className="text-right">AICTE Approval Doc</Label>
                       <div className="flex items-center">
                         <FileText className="mr-2 h-4 w-4" />
-                        {currentProgram.aicteApprovalDoc}
+                        {currentProgram.aicte_approval_doc_path ? currentProgram.aicte_approval_doc_path.split('/').pop() : "N/A"}
                       </div>
                     </div>
                     <div className="grid grid-cols-2 items-center gap-4">
                       <Label className="text-right">Accreditation Status</Label>
-                      <div>{currentProgram.accreditationStatus}</div>
+                      <div>{currentProgram.accreditation_status || "N/A"}</div>
                     </div>
                     <div className="grid grid-cols-2 items-center gap-4">
                       <Label className="text-right">Accreditation File</Label>
                       <div className="flex items-center">
                         <FileText className="mr-2 h-4 w-4" />
-                        {currentProgram.accreditationFile}
+                        {currentProgram.accreditation_file_path ? currentProgram.accreditation_file_path.split('/').pop() : "N/A"}
                       </div>
                     </div>
                   </div>
@@ -366,23 +436,23 @@ export default function ProgramsPage() {
                   <div className="mt-2 space-y-2">
                     <div className="grid grid-cols-2 items-center gap-4">
                       <Label className="text-right">Sanctioned Intake</Label>
-                      <div>{currentProgram.sanctionedIntake}</div>
+                      <div>{currentProgram.sanctioned_intake}</div>
                     </div>
                     <div className="grid grid-cols-2 items-center gap-4">
                       <Label className="text-right">Intake Changed</Label>
-                      <div>{currentProgram.intakeChanged}</div>
+                      <div>{currentProgram.intake_changed}</div>
                     </div>
-                    {currentProgram.intakeChanged === "Yes" && (
+                    {currentProgram.intake_changed === "Yes" && (
                       <>
                         <div className="grid grid-cols-2 items-center gap-4">
                           <Label className="text-right">New Intake</Label>
-                          <div>{currentProgram.newIntake}</div>
+                          <div>{currentProgram.new_intake}</div>
                         </div>
                         <div className="grid grid-cols-2 items-center gap-4">
                           <Label className="text-right">Supporting Document</Label>
                           <div className="flex items-center">
                             <FileText className="mr-2 h-4 w-4" />
-                            {currentProgram.intakeChangeDoc}
+                            {currentProgram.intake_change_doc_path ? currentProgram.intake_change_doc_path.split('/').pop() : "N/A"}
                           </div>
                         </div>
                       </>
@@ -398,13 +468,13 @@ export default function ProgramsPage() {
                     </div>
                     <div className="grid grid-cols-2 items-center gap-4">
                       <Label className="text-right">Total Credits</Label>
-                      <div>{currentProgram.totalCredits}</div>
+                      <div>{currentProgram.total_credits || "N/A"}</div>
                     </div>
                     <div className="grid grid-cols-2 items-center gap-4">
                       <Label className="text-right">Status</Label>
                       <div>
-                        <Badge variant={currentProgram.status === "active" ? "default" : "secondary"}>
-                          {currentProgram.status === "active" ? "Active" : "Inactive"}
+                        <Badge variant={currentProgram.is_active ? "default" : "secondary"}>
+                          {currentProgram.is_active ? "Active" : "Inactive"}
                         </Badge>
                       </div>
                     </div>
@@ -442,16 +512,16 @@ export default function ProgramsPage() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{currentProgram?.status === "active" ? "Deactivate" : "Activate"} Program</DialogTitle>
+            <DialogTitle>{currentProgram?.is_active ? "Deactivate" : "Activate"} Program</DialogTitle>
             <DialogDescription>
-              {currentProgram?.status === "active"
+              {currentProgram?.is_active
                 ? "This will deactivate the program. It can be reactivated later."
                 : "This will reactivate the program."}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <p>
-              Are you sure you want to {currentProgram?.status === "active" ? "deactivate" : "activate"}{" "}
+              Are you sure you want to {currentProgram?.is_active ? "deactivate" : "activate"}{" "}
               <span className="font-semibold">
                 {currentProgram?.name} ({currentProgram?.code})
               </span>
@@ -463,10 +533,16 @@ export default function ProgramsPage() {
               Cancel
             </Button>
             <Button
-              variant={currentProgram?.status === "active" ? "destructive" : "default"}
-              onClick={() => handleDeleteProgram(currentProgram?.id)}
+              variant={currentProgram?.is_active ? "destructive" : "default"}
+              onClick={() => {
+                if (currentProgram?.is_active) {
+                  handleDeleteProgram(currentProgram?.id)
+                } else {
+                  handleReactivateProgram(currentProgram?.id)
+                }
+              }}
             >
-              {currentProgram?.status === "active" ? "Deactivate" : "Activate"}
+              {currentProgram?.is_active ? "Deactivate" : "Activate"}
             </Button>
           </DialogFooter>
         </DialogContent>

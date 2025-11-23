@@ -9,83 +9,76 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
 
 interface FacultyPersonalFormProps {
   faculty?: any
+  initialData?: any
   onSubmit: (data: any) => void
 }
 
-export function FacultyPersonalForm({ faculty, onSubmit }: FacultyPersonalFormProps) {
-  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(
-    faculty?.dateOfBirth ? new Date(faculty.dateOfBirth) : undefined,
-  )
-  const [joiningDate, setJoiningDate] = useState<Date | undefined>(
-    faculty?.joiningDate ? new Date(faculty.joiningDate) : undefined,
-  )
-  const [designationDate, setDesignationDate] = useState<Date | undefined>(
-    faculty?.designationDate ? new Date(faculty.designationDate) : undefined,
-  )
-  const [appointmentDate, setAppointmentDate] = useState<Date | undefined>(
-    faculty?.appointmentDate ? new Date(faculty.appointmentDate) : undefined,
-  )
+export function FacultyPersonalForm({ faculty, initialData, onSubmit }: FacultyPersonalFormProps) {
+  const data = initialData || faculty || {}
+  
+  // Convert dates to YYYY-MM-DD format for input type="date"
+  const formatDateForInput = (date: string | Date | undefined) => {
+    if (!date) return ""
+    if (typeof date === 'string') {
+      // If it's already in YYYY-MM-DD format, return as is
+      if (date.match(/^\d{4}-\d{2}-\d{2}$/)) return date
+      // Otherwise, try to parse it
+      const d = new Date(date)
+      if (!isNaN(d.getTime())) {
+        return d.toISOString().split('T')[0]
+      }
+      return ""
+    }
+    if (date instanceof Date) {
+      return date.toISOString().split('T')[0]
+    }
+    return ""
+  }
   const [sameAsAbove, setSameAsAbove] = useState(false)
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null)
 
   const [formData, setFormData] = useState({
     // Faculty Information
-    facultyId: faculty?.facultyId || "",
-    title: faculty?.title || "",
-    firstName: faculty?.firstName || "",
-    middleName: faculty?.middleName || "",
-    lastName: faculty?.lastName || "",
-    callName: faculty?.callName || "",
-    initials: faculty?.initials || "",
-    designation: faculty?.designation || "",
-    dateOfBirth: faculty?.dateOfBirth || "",
-    gender: faculty?.gender || "",
-    permanentAddress: faculty?.permanentAddress || "",
-    currentAddress: faculty?.currentAddress || "",
-    city: faculty?.city || "",
-    state: faculty?.state || "",
-    pincode: faculty?.pincode || "",
-    residenceNumber: faculty?.residenceNumber || "",
-    personalEmail: faculty?.personalEmail || "",
-    officialEmail: faculty?.officialEmail || "",
-    nationality: faculty?.nationality || "Indian",
-    religion: faculty?.religion || "",
-    category: faculty?.category || "",
-    caste: faculty?.caste || "",
-    bloodGroup: faculty?.bloodGroup || "",
+    facultyId: data.facultyId || data.faculty_id || "",
+    title: data.title || "",
+    firstName: data.firstName || data.first_name || "",
+    middleName: data.middleName || data.middle_name || "",
+    lastName: data.lastName || data.last_name || "",
+    callName: data.callName || data.call_name || "",
+    initials: data.initials || "",
+    designation: data.designation || "",
+    dateOfBirth: formatDateForInput(data.dateOfBirth || data.date_of_birth),
+    gender: data.gender || "",
+    permanentAddress: data.permanentAddress || data.permanent_address || "",
+    currentAddress: data.currentAddress || data.current_address || "",
+    city: data.city || "",
+    state: data.state || "",
+    pincode: data.pincode || "",
+    residenceNumber: data.residenceNumber || data.residence_number || "",
+    personalEmail: data.personalEmail || data.personal_email || "",
+    officialEmail: data.officialEmail || data.official_email || "",
+    nationality: data.nationality || "Indian",
+    religion: data.religion || "",
+    category: data.category || "",
+    caste: data.caste || "",
+    bloodGroup: data.bloodGroup || data.blood_group || "",
 
     // Employment Information
-    appointmentLetterNumber: faculty?.appointmentLetterNumber || "",
-    appointmentDate: faculty?.appointmentDate || "",
-    parentDepartment: faculty?.parentDepartment || "",
-    joiningDate: faculty?.joiningDate || "",
-    designationDate: faculty?.designationDate || "",
-    associateType: faculty?.associateType || "",
-    currentlyAssociated: faculty?.currentlyAssociated || "Yes",
-    appointedTo: faculty?.appointedTo || "",
-    academicExperience: faculty?.academicExperience || "",
-    researchExperience: faculty?.researchExperience || "",
-    industryExperience: faculty?.industryExperience || "",
-    profilePhoto: faculty?.profilePhoto || "",
-
-    panFile: null,
-    aadharFile: null,
-    bankName: '',
-    bankBranch: '',
-    ifscCode: '',
-    maritalStatus: 'unmarried',
-    spouseName: '',
-    uan: '',
-    googleScholar: '',
-    scopusId: '',
-    orcId: '',
+    appointmentLetterNumber: data.appointmentLetterNumber || data.appointment_letter_number || "",
+    appointmentDate: formatDateForInput(data.appointmentDate || data.appointment_date),
+    parentDepartment: data.parentDepartment || data.parent_department || "",
+    joiningDate: formatDateForInput(data.joiningDate || data.joining_date),
+    designationDate: formatDateForInput(data.designationDate || data.designation_date),
+    associateType: data.associateType || data.associate_type || "",
+    currentlyAssociated: data.currentlyAssociated || data.currently_associated || "Yes",
+    appointedTo: data.appointedTo || data.appointed_to || "",
+    academicExperience: data.academicExperience || data.academic_experience?.toString() || "",
+    researchExperience: data.researchExperience || data.research_experience?.toString() || "",
+    industryExperience: data.industryExperience || data.industry_experience?.toString() || "",
+    profilePhoto: data.profilePhoto || "",
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -97,32 +90,8 @@ export function FacultyPersonalForm({ faculty, onSubmit }: FacultyPersonalFormPr
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleDateOfBirthChange = (date: Date | undefined) => {
-    setDateOfBirth(date)
-    if (date) {
-      setFormData((prev) => ({ ...prev, dateOfBirth: format(date, "yyyy-MM-dd") }))
-    }
-  }
-
-  const handleJoiningDateChange = (date: Date | undefined) => {
-    setJoiningDate(date)
-    if (date) {
-      setFormData((prev) => ({ ...prev, joiningDate: format(date, "yyyy-MM-dd") }))
-    }
-  }
-
-  const handleDesignationDateChange = (date: Date | undefined) => {
-    setDesignationDate(date)
-    if (date) {
-      setFormData((prev) => ({ ...prev, designationDate: format(date, "yyyy-MM-dd") }))
-    }
-  }
-
-  const handleAppointmentDateChange = (date: Date | undefined) => {
-    setAppointmentDate(date)
-    if (date) {
-      setFormData((prev) => ({ ...prev, appointmentDate: format(date, "yyyy-MM-dd") }))
-    }
+  const handleDateChange = (name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSameAsAboveChange = (checked: boolean) => {
@@ -142,7 +111,11 @@ export function FacultyPersonalForm({ faculty, onSubmit }: FacultyPersonalFormPr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    const submitData = {
+      ...formData,
+      profilePhoto: profilePhoto, // Include the File object
+    }
+    onSubmit(submitData)
   }
 
   const titles = ["Dr.", "Prof.", "Mr.", "Ms.", "Mrs.", "Shri", "Smt."]
@@ -231,17 +204,14 @@ export function FacultyPersonalForm({ faculty, onSubmit }: FacultyPersonalFormPr
         </div>
         <div className="space-y-2">
           <Label htmlFor="dateOfBirth">Date of Birth</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant={"outline"} className="w-full justify-start text-left font-normal">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateOfBirth ? format(dateOfBirth, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar mode="single" selected={dateOfBirth} onSelect={handleDateOfBirthChange} initialFocus />
-            </PopoverContent>
-          </Popover>
+          <Input
+            id="dateOfBirth"
+            name="dateOfBirth"
+            type="date"
+            value={formData.dateOfBirth}
+            onChange={(e) => handleDateChange("dateOfBirth", e.target.value)}
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="gender">Gender</Label>
@@ -276,22 +246,14 @@ export function FacultyPersonalForm({ faculty, onSubmit }: FacultyPersonalFormPr
           </div>
           <div className="space-y-2">
             <Label htmlFor="appointmentDate">Appointment Letter Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant={"outline"} className="w-full justify-start text-left font-normal">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {appointmentDate ? format(appointmentDate, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={appointmentDate}
-                  onSelect={handleAppointmentDateChange}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Input
+              id="appointmentDate"
+              name="appointmentDate"
+              type="date"
+              value={formData.appointmentDate}
+              onChange={(e) => handleDateChange("appointmentDate", e.target.value)}
+              required
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="parentDepartment">Parent Department</Label>
@@ -314,17 +276,14 @@ export function FacultyPersonalForm({ faculty, onSubmit }: FacultyPersonalFormPr
           </div>
           <div className="space-y-2">
             <Label htmlFor="joiningDate">Joining Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant={"outline"} className="w-full justify-start text-left font-normal">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {joiningDate ? format(joiningDate, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar mode="single" selected={joiningDate} onSelect={handleJoiningDateChange} initialFocus />
-              </PopoverContent>
-            </Popover>
+            <Input
+              id="joiningDate"
+              name="joiningDate"
+              type="date"
+              value={formData.joiningDate}
+              onChange={(e) => handleDateChange("joiningDate", e.target.value)}
+              required
+            />
           </div>
 
           <div className="space-y-2">

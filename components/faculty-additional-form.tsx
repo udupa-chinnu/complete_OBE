@@ -11,18 +11,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface FacultyAdditionalFormProps {
   faculty?: any
+  initialData?: any
   onSubmit: (data: any) => void
 }
 
-export function FacultyAdditionalForm({ faculty, onSubmit }: FacultyAdditionalFormProps) {
+export function FacultyAdditionalForm({ faculty, initialData, onSubmit }: FacultyAdditionalFormProps) {
+  const data = initialData || faculty || {}
   const [formData, setFormData] = useState({
-    height: faculty?.height || "",
-    contactNumber: faculty?.contactNumber || "",
-    bankAccountNumber: faculty?.bankAccountNumber || "",
- 
-    pan: faculty?.pan || "",
-    aadharNumber: faculty?.aadharNumber || "",
-    preExistingAilments: faculty?.preExistingAilments || "",
+    height: data.height || data.height || "",
+    contactNumber: data.contactNumber || data.contact_number || "",
+    bankAccountNumber: data.bankAccountNumber || data.bank_account_number || "",
+    bankName: data.bankName || data.bank_name || "",
+    bankBranch: data.bankBranch || data.bank_branch || "",
+    ifscCode: data.ifscCode || data.ifsc_code || "",
+    pan: data.pan || "",
+    aadharNumber: data.aadharNumber || data.aadhar_number || "",
+    maritalStatus: data.maritalStatus || data.marital_status || "Unmarried",
+    spouseName: data.spouseName || data.spouse_name || "",
+    uan: data.uan || "",
+    googleScholar: data.googleScholar || data.google_scholar || "",
+    scopusId: data.scopusId || data.scopus_id || "",
+    orcId: data.orcId || data.orcid || "",
+    preExistingAilments: data.preExistingAilments || data.pre_existing_ailments || "",
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

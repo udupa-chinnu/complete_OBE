@@ -1,104 +1,76 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, Search, Filter } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Plus, Search, Filter, Edit, Trash2, Eye, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-
-// Sample data for achievements
-const initialAchievements = [
-  {
-    id: 1,
-    title: "NAAC A+ Accreditation",
-    category: "Academic",
-    date: "2022-05-15",
-    academicYear: "2021-2022",
-    description: "The college received NAAC A+ accreditation with a CGPA of 3.51.",
-    department: "Institution Level",
-    level: "National",
-    uploadedBy: "Admin",
-    verifiedStatus: "Verified",
-    supportingDocument: "naac-certificate.pdf",
-    media: "naac-ceremony.jpg",
-  },
-  {
-    id: 2,
-    title: "First Prize in Smart India Hackathon",
-    category: "Innovation",
-    date: "2023-02-10",
-    academicYear: "2022-2023",
-    description: "Students from CSE department won first prize in Smart India Hackathon 2023.",
-    department: "Computer Science Engineering",
-    level: "National",
-    uploadedBy: "HOD-CSE",
-    verifiedStatus: "Verified",
-    supportingDocument: "sih-certificate.pdf",
-    media: "sih-team-photo.jpg",
-  },
-  {
-    id: 3,
-    title: "Research Grant of ₹50 Lakhs",
-    category: "Research",
-    date: "2023-04-20",
-    academicYear: "2022-2023",
-    description: "Dr. Rajesh Kumar received a research grant of ₹50 lakhs from DST for AI research.",
-    department: "Computer Science Engineering",
-    level: "National",
-    uploadedBy: "Faculty-CSE",
-    verifiedStatus: "Verified",
-    supportingDocument: "dst-grant-letter.pdf",
-    media: null,
-  },
-  {
-    id: 4,
-    title: "Inter-College Basketball Championship",
-    category: "Sports",
-    date: "2023-01-15",
-    academicYear: "2022-2023",
-    description: "College basketball team won the inter-college championship.",
-    department: "Sports Department",
-    level: "State",
-    uploadedBy: "Sports-Director",
-    verifiedStatus: "Pending",
-    supportingDocument: "basketball-certificate.pdf",
-    media: "basketball-team.jpg",
-  },
-  {
-    id: 5,
-    title: "MoU with Microsoft",
-    category: "Outreach",
-    date: "2022-11-30",
-    academicYear: "2022-2023",
-    description: "College signed MoU with Microsoft for student training and certification.",
-    department: "Institution Level",
-    level: "International",
-    uploadedBy: "Principal",
-    verifiedStatus: "Verified",
-    supportingDocument: "microsoft-mou.pdf",
-    media: "mou-signing-ceremony.jpg",
-  },
-]
+import { achievementsApi, departmentsApi } from "@/lib/api"
 
 export default function AchievementsPage() {
-  const [achievements, setAchievements] = useState(initialAchievements)
+  const [achievements, setAchievements] = useState<any[]>([])
+  const [departments, setDepartments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined)
   const [departmentFilter, setDepartmentFilter] = useState<string | undefined>(undefined)
 
-  // Filter achievements based on search term and filters
+  useEffect(() => {
+    fetchAchievements()
+    fetchDepartments()
+  }, [])
+
+  const fetchAchievements = async () => {
+    try {
+      setLoading(true)
+      const filters: any = { includeInactive: 'true' } // Include inactive to show deactivated items
+      if (categoryFilter && categoryFilter !== "all") filters.category = categoryFilter
+      if (departmentFilter && departmentFilter !== "all" && departmentFilter !== "institution") {
+        const dept = departments.find(d => d.name === departmentFilter)
+        if (dept) filters.departmentId = dept.id
+      }
+      
+      const response = await achievementsApi.getAll(filters)
+      if (response.success && response.data && Array.isArray(response.data)) {
+        setAchievements(response.data)
+      } else {
+        setAchievements([])
+      }
+    } catch (error) {
+      console.error("Error fetching achievements:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await departmentsApi.getAll()
+      if (response.success && response.data && Array.isArray(response.data)) {
+        setDepartments(response.data)
+      } else {
+        setDepartments([])
+      }
+    } catch (error) {
+      console.error("Error fetching departments:", error)
+    }
+  }
+
+  useEffect(() => {
+    fetchAchievements()
+  }, [categoryFilter, departmentFilter, departments])
+
+  // Filter achievements based on search term
   const filteredAchievements = achievements.filter((a) => {
     const matchesSearch =
-      a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.department.toLowerCase().includes(searchTerm.toLowerCase())
+      a.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.department_name?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesCategory = categoryFilter ? a.category === categoryFilter : true
-    const matchesDepartment = departmentFilter ? a.department === departmentFilter : true
-
-    return matchesSearch && matchesCategory && matchesDepartment
+    return matchesSearch
   })
 
   const categories = [
@@ -114,17 +86,41 @@ export default function AchievementsPage() {
     "Others",
   ]
 
-  const departments = [
-    "Institution Level",
-    "Computer Science Engineering",
-    "Information Science Engineering",
-    "Electronics & Communication",
-    "Mechanical Engineering",
-    "Sports Department",
-  ]
+  const handleDeleteAchievement = async (id: number) => {
+    try {
+      const achievement = achievements.find(a => a.id === id)
+      if (achievement?.is_active) {
+        const response = await achievementsApi.deactivate(id)
+        if (response.success) {
+          await fetchAchievements()
+        } else {
+          alert(response.message || "Failed to deactivate achievement")
+        }
+      } else {
+        const response = await achievementsApi.reactivate(id)
+        if (response.success) {
+          await fetchAchievements()
+        } else {
+          alert(response.message || "Failed to activate achievement")
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling achievement status:", error)
+      alert("Failed to update achievement status. Please try again.")
+    }
+  }
 
-  const handleDeleteAchievement = (id: number) => {
-    setAchievements(achievements.filter((a) => a.id !== id))
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading achievements...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -159,7 +155,7 @@ export default function AchievementsPage() {
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-categories">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
@@ -172,10 +168,11 @@ export default function AchievementsPage() {
               <SelectValue placeholder="All Departments" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-departments">All Departments</SelectItem>
+              <SelectItem value="all">All Departments</SelectItem>
+              <SelectItem value="institution">Institution Level</SelectItem>
               {departments.map((dept) => (
-                <SelectItem key={dept} value={dept}>
-                  {dept}
+                <SelectItem key={dept.id} value={dept.name}>
+                  {dept.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -219,26 +216,48 @@ export default function AchievementsPage() {
                 <TableRow key={achievement.id}>
                   <TableCell className="font-medium">{achievement.title}</TableCell>
                   <TableCell>{achievement.category}</TableCell>
-                  <TableCell>{achievement.department}</TableCell>
-                  <TableCell>{achievement.date}</TableCell>
+                  <TableCell>{achievement.department_name || "Institution Level"}</TableCell>
+                  <TableCell>{new Date(achievement.date).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        achievement.verifiedStatus === "Verified"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {achievement.verifiedStatus}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          achievement.verified_status === "Verified"
+                            ? "bg-green-100 text-green-800"
+                            : achievement.verified_status === "Rejected"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-green-100 text-white-800"
+                        }`}
+                      >
+                        {"Verified"}
+                      </span>
+                      {!achievement.is_active && (
+                        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
+                          Deactivated
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm">
-                        View
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Edit
+                      {achievement.supporting_document_path && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                        >
+                          <a
+                            href={`http://localhost:5000${achievement.supporting_document_path}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Eye className="mr-1 h-4 w-4" />
+                            View Doc
+                          </a>
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/admin/achievements/edit/${achievement.id}`}>Edit</Link>
                       </Button>
                       <Button
                         variant="outline"
@@ -246,7 +265,7 @@ export default function AchievementsPage() {
                         className="text-red-500 hover:bg-red-50"
                         onClick={() => handleDeleteAchievement(achievement.id)}
                       >
-                        Delete
+                        {achievement.is_active ? "Deactivate" : "Activate"}
                       </Button>
                     </div>
                   </TableCell>

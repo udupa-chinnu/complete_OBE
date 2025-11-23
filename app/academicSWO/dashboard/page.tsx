@@ -53,32 +53,7 @@ export default function AcademicDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Course Management</CardTitle>
-            <CardDescription>Manage courses and curriculum</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm">Add, edit, and manage course information</p>
-            <Button asChild className="w-full bg-orange-600 hover:bg-orange-700">
-              <Link href="/academicSWO/course-management">Manage Courses</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Faculty Management</CardTitle>
-            <CardDescription>Manage faculty information</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm">Add, edit, and manage faculty details</p>
-            <Button asChild className="w-full bg-red-600 hover:bg-red-700">
-              <Link href="/academicSWO/faculty-management">Manage Faculty</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
+       
         <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-xl">Exam Management</CardTitle>
@@ -148,15 +123,7 @@ export default function AcademicDashboard() {
                   <p className="text-xs text-muted-foreground">Due in 5 days</p>
                 </div>
               </li>
-              <li className="flex items-start gap-4">
-                <div className="bg-orange-100 p-2 rounded-full">
-                  <BookOpen className="h-4 w-4 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Update Course Syllabus</p>
-                  <p className="text-xs text-muted-foreground">Due in 1 week</p>
-                </div>
-              </li>
+              
               <li className="flex items-start gap-4">
                 <div className="bg-cyan-100 p-2 rounded-full">
                   <Users className="h-4 w-4 text-cyan-600" />

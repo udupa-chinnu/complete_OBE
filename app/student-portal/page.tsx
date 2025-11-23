@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { logout } from "@/lib/auth"
 import {
   User,
   CreditCard,
@@ -31,11 +32,8 @@ export default function StudentPortal() {
     }
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn")
-    localStorage.removeItem("username")
-    localStorage.removeItem("userRole")
-    localStorage.removeItem("password")
+  const handleLogout = async () => {
+    await logout()
     router.push("/")
   }
 

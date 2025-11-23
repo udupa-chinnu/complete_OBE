@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { logout } from "@/lib/auth"
 
 export default function FacultyDashboard() {
   const router = useRouter()
@@ -22,9 +23,8 @@ export default function FacultyDashboard() {
     router.push("/dashboard")
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn")
-    localStorage.removeItem("userEmail")
+  const handleLogout = async () => {
+    await logout()
     router.push("/")
   }
 

@@ -278,7 +278,7 @@ export function InstitutionBasicForm({ data, onSubmit, isEditing }: InstitutionB
                     <div className="flex items-center space-x-2">
                       <div className="h-16 w-16 rounded border bg-muted flex items-center justify-center">
                         <img
-                          src={logoFile ? URL.createObjectURL(logoFile) : `/images/sahyadri-logo.png?height=64&width=64`}
+                          src={logoFile ? URL.createObjectURL(logoFile) : (currentLogo && currentLogo.startsWith('/uploads') ? `http://localhost:5000${currentLogo}` : `/images/sahyadri-logo.png?height=64&width=64`)}
                           alt="Institution Logo"
                           className="max-h-full max-w-full object-contain"
                         />

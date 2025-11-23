@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus } from "lucide-react"
 
 interface AcademicRow {
   id: string
@@ -384,10 +384,6 @@ export default function PartBForm() {
     setData((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
   }
 
-  const deleteRow = (data: any[], setData: any, id: string) => {
-    setData((prev) => prev.filter((item) => item.id !== id))
-  }
-
   const addRow = (data: any[], setData: any, template: any) => {
     const newId = (Math.max(...data.map((d) => Number.parseInt(d.id) || 0), 0) + 1).toString()
     setData((prev) => [...prev, { ...template, id: newId }])
@@ -413,7 +409,6 @@ export default function PartBForm() {
                     <th className="border px-2 py-2 text-center">Max. Points</th>
                     <th className="border px-2 py-2 text-center">Points Earned</th>
                     <th className="border px-2 py-2 text-center">Points by HOD</th>
-                    <th className="border px-2 py-2 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -432,10 +427,8 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          onChange={(e) =>
-                            updateRow(academicEven, setAcademicEven, row.id, "maxPoints", e.target.value)
-                          }
                           className="h-8 text-center text-xs"
+                          disabled={true}
                         />
                       </td>
                       <td className="border px-2 py-2 text-center">
@@ -450,15 +443,6 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 bg-gray-100 text-gray-500 cursor-not-allowed text-center text-xs">
                         -
                       </td>
-                      <td className="border px-2 py-2 text-center">
-                        <Button
-                          onClick={() => deleteRow(academicEven, setAcademicEven, row.id)}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </td>
                     </tr>
                   ))}
                   <tr className="bg-gray-100 font-bold">
@@ -471,7 +455,6 @@ export default function PartBForm() {
                         .reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
                         .toFixed(1)}
                     </td>
-                    <td></td>
                     <td></td>
                   </tr>
                 </tbody>
@@ -489,7 +472,6 @@ export default function PartBForm() {
                       <th className="border px-2 py-1 text-left">Innovative Idea</th>
                       <th className="border px-2 py-1 text-left">No. of Assignments</th>
                       <th className="border px-2 py-1 text-left">Details</th>
-                      <th className="border px-2 py-1 text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -535,15 +517,6 @@ export default function PartBForm() {
                             className="h-6 text-xs"
                           />
                         </td>
-                        <td className="border px-2 py-1 text-center">
-                          <Button
-                            onClick={() => deleteRow(innovativeAssignments, setInnovativeAssignments, row.id)}
-                            size="sm"
-                            variant="destructive"
-                          >
-                            <Trash2 className="w-2 h-2" />
-                          </Button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -577,7 +550,6 @@ export default function PartBForm() {
                       <th className="border px-2 py-1 text-left">Innovative Methodology</th>
                       <th className="border px-2 py-1 text-left">Tools</th>
                       <th className="border px-2 py-1 text-left">Details</th>
-                      <th className="border px-2 py-1 text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -622,15 +594,6 @@ export default function PartBForm() {
                             }
                             className="h-6 text-xs"
                           />
-                        </td>
-                        <td className="border px-2 py-1 text-center">
-                          <Button
-                            onClick={() => deleteRow(innovativeMethodology, setInnovativeMethodology, row.id)}
-                            size="sm"
-                            variant="destructive"
-                          >
-                            <Trash2 className="w-2 h-2" />
-                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -683,7 +646,6 @@ export default function PartBForm() {
                     <th className="border px-2 py-2 text-center">Max. Points</th>
                     <th className="border px-2 py-2 text-center">Points Earned</th>
                     <th className="border px-2 py-2 text-center">Points by HOD</th>
-                    <th className="border px-2 py-2 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -700,8 +662,9 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          onChange={(e) => updateRow(academicOdd, setAcademicOdd, row.id, "maxPoints", e.target.value)}
+                          //onChange={(e) => updateRow(academicOdd, setAcademicOdd, row.id, "maxPoints", e.target.value)}
                           className="h-8 text-center text-xs"
+                          disabled={true}
                         />
                       </td>
                       <td className="border px-2 py-2 text-center">
@@ -716,15 +679,6 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 bg-gray-100 text-gray-500 cursor-not-allowed text-center text-xs">
                         -
                       </td>
-                      <td className="border px-2 py-2 text-center">
-                        <Button
-                          onClick={() => deleteRow(academicOdd, setAcademicOdd, row.id)}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </td>
                     </tr>
                   ))}
                   <tr className="bg-gray-100 font-bold">
@@ -735,7 +689,6 @@ export default function PartBForm() {
                     <td className="border px-2 py-2 text-center">
                       {academicOdd.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0).toFixed(1)}
                     </td>
-                    <td></td>
                     <td></td>
                   </tr>
                 </tbody>
@@ -775,7 +728,6 @@ export default function PartBForm() {
                     <th className="border px-2 py-2 text-center">Max. Points</th>
                     <th className="border px-2 py-2 text-center">Points Earned</th>
                     <th className="border px-2 py-2 text-center">Points by HOD</th>
-                    <th className="border px-2 py-2 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -792,8 +744,9 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          onChange={(e) => updateRow(research, setResearch, row.id, "maxPoints", e.target.value)}
+                          //onChange={(e) => updateRow(research, setResearch, row.id, "maxPoints", e.target.value)}
                           className="h-8 text-center text-xs"
+                          disabled={true}
                         />
                       </td>
                       <td className="border px-2 py-2 text-center">
@@ -806,15 +759,6 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 bg-gray-100 text-gray-500 cursor-not-allowed text-center text-xs">
                         -
                       </td>
-                      <td className="border px-2 py-2 text-center">
-                        <Button
-                          onClick={() => deleteRow(research, setResearch, row.id)}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </td>
                     </tr>
                   ))}
                   <tr className="bg-gray-100 font-bold">
@@ -826,21 +770,10 @@ export default function PartBForm() {
                       {research.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0).toFixed(1)}
                     </td>
                     <td></td>
-                    <td></td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <Button
-              onClick={() =>
-                addRow(research, setResearch, { component: "", maxPoints: "", pointsEarned: "", pointsByHod: "" })
-              }
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 mt-3"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Component
-            </Button>
           </div>
 
           {/* Publications */}
@@ -855,7 +788,6 @@ export default function PartBForm() {
                     <th className="border px-2 py-2 text-center">Max. Points</th>
                     <th className="border px-2 py-2 text-center">Points Earned</th>
                     <th className="border px-2 py-2 text-center">Points by HOD</th>
-                    <th className="border px-2 py-2 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -874,9 +806,7 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          onChange={(e) =>
-                            updateRow(publications, setPublications, row.id, "maxPoints", e.target.value)
-                          }
+                          disabled={true}
                           className="h-8 text-center text-xs"
                         />
                       </td>
@@ -892,15 +822,6 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 bg-gray-100 text-gray-500 cursor-not-allowed text-center text-xs">
                         -
                       </td>
-                      <td className="border px-2 py-2 text-center">
-                        <Button
-                          onClick={() => deleteRow(publications, setPublications, row.id)}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </td>
                     </tr>
                   ))}
                   <tr className="bg-gray-100 font-bold">
@@ -914,26 +835,10 @@ export default function PartBForm() {
                         .toFixed(1)}
                     </td>
                     <td></td>
-                    <td></td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <Button
-              onClick={() =>
-                addRow(publications, setPublications, {
-                  component: "",
-                  maxPoints: "",
-                  pointsEarned: "",
-                  pointsByHod: "",
-                })
-              }
-              size="sm"
-              className="bg-purple-600 hover:bg-purple-700 mt-3"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Component
-            </Button>
           </div>
 
           {/* Professional Development */}
@@ -948,7 +853,6 @@ export default function PartBForm() {
                     <th className="border px-2 py-2 text-center">Max. Points</th>
                     <th className="border px-2 py-2 text-center">Points Earned</th>
                     <th className="border px-2 py-2 text-center">Points by HOD</th>
-                    <th className="border px-2 py-2 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -967,9 +871,7 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          onChange={(e) =>
-                            updateRow(professional, setProfessional, row.id, "maxPoints", e.target.value)
-                          }
+                          disabled={true}
                           className="h-8 text-center text-xs"
                         />
                       </td>
@@ -985,15 +887,6 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 bg-gray-100 text-gray-500 cursor-not-allowed text-center text-xs">
                         -
                       </td>
-                      <td className="border px-2 py-2 text-center">
-                        <Button
-                          onClick={() => deleteRow(professional, setProfessional, row.id)}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </td>
                     </tr>
                   ))}
                   <tr className="bg-gray-100 font-bold">
@@ -1007,26 +900,10 @@ export default function PartBForm() {
                         .toFixed(1)}
                     </td>
                     <td></td>
-                    <td></td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <Button
-              onClick={() =>
-                addRow(professional, setProfessional, {
-                  component: "",
-                  maxPoints: "",
-                  pointsEarned: "",
-                  pointsByHod: "",
-                })
-              }
-              size="sm"
-              className="bg-orange-600 hover:bg-orange-700 mt-3"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Component
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -1049,7 +926,6 @@ export default function PartBForm() {
                     <th className="border px-2 py-2 text-center">Max. Points</th>
                     <th className="border px-2 py-2 text-center">Points Earned</th>
                     <th className="border px-2 py-2 text-center">Points by HOD</th>
-                    <th className="border px-2 py-2 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1068,9 +944,7 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          onChange={(e) =>
-                            updateRow(departmental, setDepartmental, row.id, "maxPoints", e.target.value)
-                          }
+                          disabled={true}
                           className="h-8 text-center text-xs"
                         />
                       </td>
@@ -1086,15 +960,6 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 bg-gray-100 text-gray-500 cursor-not-allowed text-center text-xs">
                         -
                       </td>
-                      <td className="border px-2 py-2 text-center">
-                        <Button
-                          onClick={() => deleteRow(departmental, setDepartmental, row.id)}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </td>
                     </tr>
                   ))}
                   <tr className="bg-gray-100 font-bold">
@@ -1108,26 +973,10 @@ export default function PartBForm() {
                         .toFixed(1)}
                     </td>
                     <td></td>
-                    <td></td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <Button
-              onClick={() =>
-                addRow(departmental, setDepartmental, {
-                  component: "",
-                  maxPoints: "",
-                  pointsEarned: "",
-                  pointsByHod: "",
-                })
-              }
-              size="sm"
-              className="bg-red-600 hover:bg-red-700 mt-3"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Component
-            </Button>
           </div>
 
           {/* Institutional Activities */}
@@ -1142,7 +991,6 @@ export default function PartBForm() {
                     <th className="border px-2 py-2 text-center">Max. Points</th>
                     <th className="border px-2 py-2 text-center">Points Earned</th>
                     <th className="border px-2 py-2 text-center">Points by HOD</th>
-                    <th className="border px-2 py-2 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1161,32 +1009,19 @@ export default function PartBForm() {
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          onChange={(e) =>
-                            updateRow(institutional, setInstitutional, row.id, "maxPoints", e.target.value)
-                          }
+                          disabled={true}
                           className="h-8 text-center text-xs"
                         />
                       </td>
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.pointsEarned}
-                          onChange={(e) =>
-                            updateRow(institutional, setInstitutional, row.id, "pointsEarned", e.target.value)
-                          }
+                          disabled={true}
                           className="h-8 text-center text-xs"
                         />
                       </td>
                       <td className="border px-2 py-2 bg-gray-100 text-gray-500 cursor-not-allowed text-center text-xs">
                         -
-                      </td>
-                      <td className="border px-2 py-2 text-center">
-                        <Button
-                          onClick={() => deleteRow(institutional, setInstitutional, row.id)}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -1201,26 +1036,10 @@ export default function PartBForm() {
                         .toFixed(1)}
                     </td>
                     <td></td>
-                    <td></td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <Button
-              onClick={() =>
-                addRow(institutional, setInstitutional, {
-                  component: "",
-                  maxPoints: "",
-                  pointsEarned: "",
-                  pointsByHod: "",
-                })
-              }
-              size="sm"
-              className="bg-indigo-600 hover:bg-indigo-700 mt-3"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Component
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -1323,35 +1142,6 @@ export default function PartBForm() {
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Remarks by HoD</label>
             <Textarea placeholder="HoD remarks will be added after evaluation" disabled className="min-h-20" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Remarks by Screening/Evaluation Committee
-            </label>
-            <Textarea placeholder="Committee remarks will be added after evaluation" disabled className="min-h-20" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Remarks by Principal</label>
-            <Textarea placeholder="Principal remarks will be added after evaluation" disabled className="min-h-20" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Signature Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Signature Area</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-sm text-gray-600 mb-12">Signature of Faculty Member with Date</p>
-              <div className="border-t border-gray-400"></div>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 mb-12">Signature of HOD with Date</p>
-              <div className="border-t border-gray-400"></div>
-            </div>
           </div>
         </CardContent>
       </Card>

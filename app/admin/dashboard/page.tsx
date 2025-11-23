@@ -8,7 +8,6 @@ import {
   ArrowRight,
   Award,
   Building,
-  DoorClosed,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -62,14 +61,6 @@ export default function AdminDashboard() {
       href: "/admin/achievements",
       count: 42,
       label: "Achievements",
-    },
-    {
-      title: "Leave Management",
-      description: "Manage staff exits, resignations, and retirements",
-      icon: <DoorClosed className="h-8 w-8" />,
-      href: "/admin/leave-requests",
-      count: 15,
-      label: "Leave Records",
     },
     {
       title: "Appraisal Structure",

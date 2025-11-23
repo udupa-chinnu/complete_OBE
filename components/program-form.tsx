@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { departmentsApi } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -43,13 +44,21 @@ export function ProgramForm({ program, onSubmit, onCancel }: ProgramFormProps) {
   const [intakeChangeFile, setIntakeChangeFile] = useState<File | null>(null)
   const [accreditationDocFile, setAccreditationDocFile] = useState<File | null>(null)
 
-  const departments = [
-    "Computer Science Engineering",
-    "Information Science Engineering",
-    "Electronics & Communication",
-    "Mechanical Engineering",
-    "Robotics & Automation",
-  ]
+  const [departments, setDepartments] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await departmentsApi.getAll()
+        if (response.success && response.data) {
+          setDepartments(response.data)
+        }
+      } catch (error) {
+        console.error('Error fetching departments:', error)
+      }
+    }
+    fetchDepartments()
+  }, [])
 
   const accreditationTypes = ["NBA Accredited", "NAAC Accredited", "Not Accredited", "In Process"]
 
@@ -109,7 +118,13 @@ export function ProgramForm({ program, onSubmit, onCancel }: ProgramFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    const submitData = {
+      ...formData,
+      aicteApprovalDoc: aicteFile, // Include File object
+      intakeChangeDoc: intakeChangeFile, // Include File object
+      accreditationFile: accreditationDocFile, // Include File object
+    }
+    onSubmit(submitData)
   }
 
   return (
@@ -230,8 +245,8 @@ export function ProgramForm({ program, onSubmit, onCancel }: ProgramFormProps) {
               </SelectTrigger>
               <SelectContent>
                 {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>
-                    {dept}
+                  <SelectItem key={dept.id} value={dept.name}>
+                    {dept.name}
                   </SelectItem>
                 ))}
               </SelectContent>

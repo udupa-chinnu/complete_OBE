@@ -181,9 +181,9 @@ export function InstitutionGovernanceForm({ data, onSubmit, isEditing }: Institu
                 name="trustRegistrationDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Trust Registration Date</FormLabel>
+                    
                     <FormControl>
-                      <Input {...field} type="date" disabled={!isEditing} />
+                      03/04/2007
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Upload } from "lucide-react"
 import Link from "next/link"
+import { achievementsApi, departmentsApi } from "@/lib/api"
 
 const achievementFormSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
@@ -32,6 +33,24 @@ export default function AddAchievementPage() {
   const router = useRouter()
   const [supportingDoc, setSupportingDoc] = useState<File | null>(null)
   const [mediaFile, setMediaFile] = useState<File | null>(null)
+  const [departments, setDepartments] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await departmentsApi.getAll()
+        if (response.success && response.data && Array.isArray(response.data)) {
+          setDepartments(response.data)
+        } else {
+          setDepartments([])
+        }
+      } catch (error) {
+        console.error('Error fetching departments:', error)
+        setDepartments([])
+      }
+    }
+    fetchDepartments()
+  }, [])
 
   const form = useForm<AchievementFormValues>({
     resolver: zodResolver(achievementFormSchema),
@@ -42,14 +61,43 @@ export default function AddAchievementPage() {
     },
   })
 
-  function onSubmit(data: AchievementFormValues) {
-    console.log("Form submitted:", data)
-    console.log("Supporting document:", supportingDoc)
-    console.log("Media file:", mediaFile)
+  async function onSubmit(data: AchievementFormValues) {
+    try {
+      const formData = new FormData()
+      formData.append('title', data.title)
+      formData.append('category', data.category)
+      formData.append('date', data.date)
+      formData.append('academicYear', data.academicYear)
+      formData.append('description', data.description)
+      formData.append('level', data.level)
+      formData.append('uploadedBy', 'Admin')
+      formData.append('verifiedStatus', data.verifiedStatus || 'Pending')
+      
+      if (data.department && data.department !== 'Institution Level') {
+        const dept = departments.find(d => d.name === data.department)
+        if (dept) {
+          formData.append('departmentId', dept.id.toString())
+        }
+      }
+      
+      if (supportingDoc) {
+        formData.append('supportingDocument', supportingDoc)
+      }
+      if (mediaFile) {
+        formData.append('media', mediaFile)
+      }
 
-    // In a real application, you would send this data to your backend
-    // For now, we'll just redirect back to the achievements page
-    router.push("/admin/achievements")
+      const response = await achievementsApi.create(formData)
+      
+      if (response.success) {
+        router.push("/admin/achievements")
+      } else {
+        alert(response.message || "Failed to create achievement")
+      }
+    } catch (error) {
+      console.error("Error creating achievement:", error)
+      alert("Failed to create achievement. Please try again.")
+    }
   }
 
   const categories = [
@@ -65,13 +113,9 @@ export default function AddAchievementPage() {
     "Others",
   ]
 
-  const departments = [
+  const departmentOptions = [
     "Institution Level",
-    "Computer Science Engineering",
-    "Information Science Engineering",
-    "Electronics & Communication",
-    "Mechanical Engineering",
-    "Sports Department",
+    ...departments.map(d => d.name),
   ]
 
   const levels = ["International", "National", "State", "University", "District", "College"]
@@ -194,7 +238,7 @@ export default function AddAchievementPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {departments.map((dept) => (
+                          {departmentOptions.map((dept) => (
                             <SelectItem key={dept} value={dept}>
                               {dept}
                             </SelectItem>

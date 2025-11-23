@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label" // Import regular Label
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 const formSchema = z.object({
   highestQualification: z.string({
@@ -64,7 +64,7 @@ const formSchema = z.object({
     .default([]),
 })
 
-export function FacultyQualificationForm({ onSubmit }: { onSubmit: (data: any) => void }) {
+export function FacultyQualificationForm({ onSubmit, initialData }: { onSubmit: (data: any) => void, initialData?: any }) {
   const [publications, setPublications] = useState<any[]>([{ title: "", journal: "", year: "", doi: "" }])
   const [researchProjects, setResearchProjects] = useState<any[]>([
     { title: "", fundingAgency: "", amount: "", duration: "", status: "" },
@@ -76,17 +76,47 @@ export function FacultyQualificationForm({ onSubmit }: { onSubmit: (data: any) =
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      highestQualification: "",
-      specialization: "",
-      university: "",
-      yearOfCompletion: "",
-      otherQualifications: "",
-      researchInterests: "",
-      publications: [{ title: "", journal: "", year: "", doi: "" }],
-      researchProjects: [{ title: "", fundingAgency: "", amount: "", duration: "", status: "" }],
-      certifications: [{ name: "", issuingOrganization: "", issueDate: "", expiryDate: "" }],
+      highestQualification: initialData?.highestQualification || "",
+      specialization: initialData?.specialization || "",
+      university: initialData?.university || "",
+      yearOfCompletion: initialData?.yearOfCompletion || "",
+      otherQualifications: initialData?.otherQualifications || "",
+      researchInterests: initialData?.researchInterests || "",
+      publications: initialData?.publications || [{ title: "", journal: "", year: "", doi: "" }],
+      researchProjects: initialData?.researchProjects || [{ title: "", fundingAgency: "", amount: "", duration: "", status: "" }],
+      certifications: initialData?.certifications || [{ name: "", issuingOrganization: "", issueDate: "", expiryDate: "" }],
     },
   })
+
+  useEffect(() => {
+    if (initialData) {
+      // Update form values when initialData changes
+      if (initialData.highestQualification) {
+        form.setValue('highestQualification', initialData.highestQualification)
+      }
+      if (initialData.specialization) {
+        form.setValue('specialization', initialData.specialization)
+      }
+      if (initialData.university) {
+        form.setValue('university', initialData.university)
+      }
+      if (initialData.yearOfCompletion) {
+        form.setValue('yearOfCompletion', initialData.yearOfCompletion)
+      }
+      if (initialData.researchInterests) {
+        form.setValue('researchInterests', initialData.researchInterests)
+      }
+      if (initialData.publications && Array.isArray(initialData.publications) && initialData.publications.length > 0) {
+        setPublications(initialData.publications)
+      }
+      if (initialData.researchProjects && Array.isArray(initialData.researchProjects) && initialData.researchProjects.length > 0) {
+        setResearchProjects(initialData.researchProjects)
+      }
+      if (initialData.certifications && Array.isArray(initialData.certifications) && initialData.certifications.length > 0) {
+        setCertifications(initialData.certifications)
+      }
+    }
+  }, [initialData])
 
   const addPublication = () => {
     setPublications([...publications, { title: "", journal: "", year: "", doi: "" }])
@@ -157,19 +187,19 @@ export function FacultyQualificationForm({ onSubmit }: { onSubmit: (data: any) =
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Highest Qualification</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select qualification" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="phd">Post Doctorial</SelectItem>
-                    <SelectItem value="masters">Ph.D</SelectItem>
+                    <SelectItem value="post-doctoral">Post Doctoral</SelectItem>
+                    <SelectItem value="phd">Ph.D</SelectItem>
                     <SelectItem value="masters">Masters</SelectItem>
                     <SelectItem value="bachelors">Bachelors</SelectItem>
                     <SelectItem value="diploma">10+2</SelectItem>
-                    <SelectItem value="other">SSLC</SelectItem>
+                    <SelectItem value="sslc">SSLC</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -232,7 +262,9 @@ export function FacultyQualificationForm({ onSubmit }: { onSubmit: (data: any) =
         </div>
 
 
-        <Button type="submit">Save & Continue</Button>
+        <div className="flex justify-end">
+          <Button type="submit">Save & Continue</Button>
+        </div>
       </form>
     </Form>
   )

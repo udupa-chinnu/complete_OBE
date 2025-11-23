@@ -2,12 +2,13 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { departmentsApi } from "@/lib/api"
 
 interface UploadFormProps {
   upload?: any
@@ -20,13 +21,28 @@ export function UploadForm({ upload, onSubmit, onCancel }: UploadFormProps) {
     id: upload?.id || null,
     title: upload?.title || "",
     type: upload?.type || "",
-    department: upload?.department || "",
+    department: upload?.department || upload?.department_name || "",
     document: upload?.document || "",
-    uploadDate: upload?.uploadDate || new Date().toISOString().split("T")[0],
+    uploadDate: upload?.uploadDate || upload?.upload_date ? (upload.upload_date.includes('T') ? upload.upload_date.split('T')[0] : upload.upload_date) : new Date().toISOString().split("T")[0],
     status: upload?.status || "active",
   })
 
   const [file, setFile] = useState<File | null>(null)
+  const [departments, setDepartments] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await departmentsApi.getAll()
+        if (response.success && response.data) {
+          setDepartments(response.data)
+        }
+      } catch (error) {
+        console.error('Error fetching departments:', error)
+      }
+    }
+    fetchDepartments()
+  }, [])
 
   const uploadTypes = [
     "Accreditation Reports",
@@ -37,14 +53,6 @@ export function UploadForm({ upload, onSubmit, onCancel }: UploadFormProps) {
     "Infrastructure Report",
     "Annual Report",
     "Other",
-  ]
-
-  const departments = [
-    "Computer Science Engineering",
-    "Information Science Engineering",
-    "Electronics & Communication",
-    "Mechanical Engineering",
-    "Robotics & Automation",
   ]
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,7 +74,11 @@ export function UploadForm({ upload, onSubmit, onCancel }: UploadFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    const submitData = {
+      ...formData,
+      document: file || formData.document, // Pass file if new one selected
+    }
+    onSubmit(submitData)
   }
 
   return (
@@ -118,9 +130,10 @@ export function UploadForm({ upload, onSubmit, onCancel }: UploadFormProps) {
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="institution">Institution Level</SelectItem>
                 {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>
-                    {dept}
+                  <SelectItem key={dept.id} value={dept.name}>
+                    {dept.name}
                   </SelectItem>
                 ))}
               </SelectContent>

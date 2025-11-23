@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { BookOpen, Award, Building2, FileText, Users, BarChart3, Settings } from "lucide-react"
+import { logout } from "@/lib/auth"
 
 const HODDashboardPage = () => {
   const router = useRouter()
@@ -55,9 +56,8 @@ const HODDashboardPage = () => {
     router.push("/dashboard")
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn")
-    localStorage.removeItem("userEmail")
+  const handleLogout = async () => {
+    await logout()
     router.push("/")
   }
 

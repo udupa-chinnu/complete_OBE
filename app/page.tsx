@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
+import { login } from "@/lib/auth"
 
 export default function LoginPage() {
   const [username, setUsername] = useState("")
@@ -21,38 +22,48 @@ export default function LoginPage() {
     setError("")
     setIsLoading(true)
 
-    // Simple validation
+    // Validation
     if (!username || !password) {
       setError("Please enter both username and password")
       setIsLoading(false)
       return
     }
+   
+  
 
-    // Store login info
-    localStorage.setItem("isLoggedIn", "true")
-    localStorage.setItem("username", username)
-    localStorage.setItem("password", password)
+    try {
+      // Call authentication API
+      const response = await login(username, password)
 
-    // Role-based redirection based on username prefix
-    if (username.toLowerCase().startsWith("adm")) {
-      // Redirect to admin portal
-      router.push("/admin/dashboard")
-    } else if (username.toUpperCase().startsWith("FA")) {
-      // Redirect to faculty portal
-      localStorage.setItem("userRole", "faculty")
-      router.push("/dashboard")
-    } else if (username.toLowerCase().startsWith("acad")) {
-      // Redirect to academic portal
-      router.push("/academicSWO/dashboard")
-    } else if (username.toLowerCase().startsWith("4sf")) {
-      // Redirect to student portal
-      localStorage.setItem("userRole", "student")
-      router.push("/student-portal")
-    } else {
-      setError("Invalid username prefix. Please check your username.")
+      if (response.success && response.data) {
+        const user = response.data.user
+
+        // Role-based redirection
+        switch (user.userType) {
+          case 'admin':
+            router.push("/admin/dashboard")
+            break
+          case 'academic':
+            router.push("/academicSWO/dashboard")
+            break
+          case 'faculty':
+            router.push("/dashboard")
+            break
+          case 'student':
+            router.push("/student-portal")
+            break
+          default:
+            setError("Unknown user type")
+        }
+      } else {
+        setError(response.message || "Invalid credentials. Please try again.")
+      }
+    } catch (err) {
+      console.error("Login error:", err)
+      setError("An error occurred during login. Please try again.")
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
   }
 
   return (
@@ -76,9 +87,6 @@ export default function LoginPage() {
                 required
                 disabled={isLoading}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Prefix: adm (Admin) | FA (Faculty) | acad (Academic) | 4sf (Student)
-              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -96,13 +104,6 @@ export default function LoginPage() {
               {isLoading ? "Logging in..." : "Login"}
             </Button>
           </form>
-          <div className="mt-4 p-3 bg-blue-50 rounded text-xs text-gray-700">
-            <p className="font-semibold mb-2">Demo Credentials:</p>
-            <p>• Admin: adm123 / pass123</p>
-            <p>• Faculty: FA001 / pass123</p>
-            <p>• Academic: acad001 / pass123</p>
-            <p>• Student: 4sf001 / pass123</p>
-          </div>
         </CardContent>
       </Card>
     </div>
