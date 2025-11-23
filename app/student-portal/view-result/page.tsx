@@ -1,14 +1,21 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, BarChart3, Trophy } from "lucide-react"
 
 export default function ViewResultPage() {
   const router = useRouter()
-  const [selectedSemester, setSelectedSemester] = useState("3")
+  const searchParams = useSearchParams()
+  const semParam = searchParams?.get("sem")
+  const [selectedSemester, setSelectedSemester] = useState(semParam || "3")
+
+  useEffect(() => {
+    // update selected semester if query param changes
+    if (semParam) setSelectedSemester(semParam)
+  }, [semParam])
 
   const semesterResults: Record<string, any[]> = {
     "1": [

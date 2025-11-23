@@ -1,0 +1,307 @@
+// "use client"
+
+// import { useState } from "react"
+
+// const registered = [
+//   { id: "r1", name: "Data Structures", code: "CS301" },
+//   { id: "r2", name: "Web Development", code: "CS302" },
+// ]
+
+// export default function CourseWithdraw({ searchParams }: { searchParams?: { sem?: string } }) {
+//   const sem = searchParams?.sem || "1"
+//   const [items, setItems] = useState(registered)
+
+//   function withdraw(id: string) {
+//     setItems((it) => it.filter((i) => i.id !== id))
+//   }
+
+//   return (
+//     <main className="p-6">
+//       <h1 className="text-2xl font-semibold mb-2">Course Withdraw — Semester {sem}</h1>
+//       <p className="text-sm text-muted-foreground mb-4">Withdraw from any registered course below.</p>
+
+//       <ul className="space-y-3">
+//         {items.map((c) => (
+//           <li key={c.id} className="flex items-center justify-between border p-3 rounded">
+//             <div>
+//               <div className="font-medium">{c.name}</div>
+//               <div className="text-sm text-muted-foreground">{c.code}</div>
+//             </div>
+//             <button onClick={() => withdraw(c.id)} className="px-3 py-1 bg-red-600 text-white rounded">Withdraw</button>
+//           </li>
+//         ))}
+//       </ul>
+//     </main>
+//   )
+// }
+"use client"
+
+import { useState } from "react"
+import { AlertCircle, GraduationCap, BookOpen, Calendar, Users, XCircle, Lock } from "lucide-react"
+
+type Course = {
+  id: string
+  name: string
+  code: string
+  credits: number
+  instructor: string
+  schedule: string
+  isMandatory: boolean
+}
+
+const registered: Course[] = [
+  { id: "r1", name: "Data Structures", code: "CS301", credits: 4, instructor: "Dr. Smith", schedule: "Mon/Wed 10:00-11:30", isMandatory: true },
+  { id: "r2", name: "Web Development", code: "CS302", credits: 3, instructor: "Prof. Johnson", schedule: "Tue/Thu 14:00-15:30", isMandatory: false },
+  { id: "r3", name: "Database Systems", code: "CS303", credits: 4, instructor: "Dr. Williams", schedule: "Mon/Wed 14:00-15:30", isMandatory: true },
+  { id: "r4", name: "Computer Networks", code: "CS304", credits: 3, instructor: "Prof. Brown", schedule: "Tue/Thu 10:00-11:30", isMandatory: false },
+  { id: "r5", name: "Operating Systems", code: "CS305", credits: 4, instructor: "Dr. Johnson", schedule: "Mon/Wed 16:00-17:30", isMandatory: false },
+  { id: "r6", name: "Software Engineering", code: "CS306", credits: 4, instructor: "Prof. Garcia", schedule: "Wed/Fri 10:00-11:30", isMandatory: true },
+  { id: "r7", name: "Machine Learning", code: "CS307", credits: 4, instructor: "Dr. Davis", schedule: "Tue/Thu 16:00-17:30", isMandatory: false },
+  { id: "r8", name: "Mobile Development", code: "CS308", credits: 3, instructor: "Prof. Lee", schedule: "Mon/Fri 14:00-15:30", isMandatory: false },
+]
+
+export default function CourseWithdraw({ searchParams }: { searchParams?: { sem?: string } }) {
+  const sem = searchParams?.sem || "1"
+  const [items, setItems] = useState(registered)
+  const [withdrawnCourses, setWithdrawnCourses] = useState<Course[]>([])
+
+  const totalCredits = items.reduce((sum, item) => sum + item.credits, 0)
+  const minCredits = 21
+  const mandatoryCount = items.filter(c => c.isMandatory).length
+
+  function withdraw(id: string) {
+    const course = items.find((i) => i.id === id)
+    if (!course) return
+    
+    if (course.isMandatory) {
+      alert(`${course.name} is a mandatory course and cannot be withdrawn.`)
+      return
+    }
+    
+    const newTotal = totalCredits - course.credits
+    if (newTotal < minCredits) {
+      alert(`Cannot withdraw from ${course.name}. You must maintain at least ${minCredits} credits. Withdrawing from this course would leave you with ${newTotal} credits.`)
+      return
+    }
+    
+    setItems((it) => it.filter((i) => i.id !== id))
+    setWithdrawnCourses((prev) => [...prev, course])
+  }
+
+  function undoWithdraw(id: string) {
+    const course = withdrawnCourses.find((c) => c.id === id)
+    if (!course) return
+    
+    setWithdrawnCourses((prev) => prev.filter((c) => c.id !== id))
+    setItems((prev) => [...prev, course])
+  }
+
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-rose-50 to-red-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <GraduationCap className="w-8 h-8 text-rose-600" />
+            <h1 className="text-3xl font-bold text-gray-800">Course Withdrawal Portal</h1>
+          </div>
+          <div className="flex items-center gap-2 ml-11 text-gray-600">
+            <Calendar className="w-4 h-4" />
+            <p>Semester {sem} • Academic Year 2024-25</p>
+          </div>
+        </div>
+
+        {/* Credits Summary */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-1">Total Credits</p>
+              <p className="text-4xl font-bold text-rose-600">{totalCredits}</p>
+            </div>
+            <div className="text-center border-l border-r border-gray-200">
+              <p className="text-sm text-gray-600 mb-1">Registered Courses</p>
+              <p className="text-4xl font-bold text-blue-600">{items.length}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-1">Minimum Required</p>
+              <p className="text-4xl font-bold text-gray-700">{minCredits}</p>
+            </div>
+          </div>
+          
+          {totalCredits <= minCredits && (
+            <div className="mt-4 bg-orange-50 border-l-4 border-orange-400 p-4 rounded">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-orange-800">Credit Limit Reached</p>
+                  <p className="text-sm text-orange-700 mt-1">
+                    You cannot withdraw from any more courses. You must maintain at least {minCredits} credits.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {totalCredits > minCredits && (
+            <div className="mt-4 bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-blue-800">Withdrawal Available</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    You can withdraw from elective courses as long as your total credits remain at or above {minCredits}.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 bg-rose-50 border-l-4 border-rose-400 p-4 rounded">
+            <div className="flex items-start gap-2">
+              <Lock className="w-5 h-5 text-rose-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-rose-800">Mandatory Courses</p>
+                <p className="text-sm text-rose-700 mt-1">
+                  {mandatoryCount} mandatory course(s) cannot be withdrawn.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Registered Courses */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-center gap-2 mb-6">
+            <BookOpen className="w-5 h-5 text-rose-600" />
+            <h2 className="text-xl font-semibold text-gray-800">Registered Courses</h2>
+            <span className="ml-2 px-2 py-1 bg-rose-100 text-rose-700 text-sm font-medium rounded">
+              {items.length} courses
+            </span>
+          </div>
+
+          {items.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No courses registered</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {items.map((course) => {
+                const newTotal = totalCredits - course.credits
+                const wouldBeUnderMin = newTotal < minCredits
+                const cannotWithdraw = course.isMandatory || wouldBeUnderMin
+
+                return (
+                  <div
+                    key={course.id}
+                    className={`border-2 rounded-lg p-5 transition-all ${
+                      cannotWithdraw
+                        ? 'border-gray-200 bg-gray-50'
+                        : 'border-gray-200 hover:shadow-md bg-gradient-to-r from-white to-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                          <h3 className="text-lg font-semibold text-gray-800">{course.name}</h3>
+                          <span className="px-2 py-1 bg-rose-100 text-rose-700 text-sm font-semibold rounded">
+                            {course.credits} credits
+                          </span>
+                          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded">
+                            {course.code}
+                          </span>
+                          {course.isMandatory && (
+                            <span className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded">
+                              <Lock className="w-3 h-3" />
+                              Mandatory
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Users className="w-4 h-4" />
+                            <span>{course.instructor}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Calendar className="w-4 h-4" />
+                            <span>{course.schedule}</span>
+                          </div>
+                        </div>
+
+                        {wouldBeUnderMin && !course.isMandatory && (
+                          <p className="mt-2 text-sm text-red-600 font-medium">
+                            Cannot withdraw - would leave you with {newTotal} credits (minimum: {minCredits})
+                          </p>
+                        )}
+                      </div>
+                      
+                      <button
+                        onClick={() => withdraw(course.id)}
+                        disabled={cannotWithdraw}
+                        className={`ml-4 px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                          cannotWithdraw
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg'
+                        }`}
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Withdraw
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Withdrawn Courses */}
+        {withdrawnCourses.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Withdrawn Courses</h2>
+            <div className="grid gap-4">
+              {withdrawnCourses.map((course) => (
+                <div
+                  key={course.id}
+                  className="border-2 border-gray-200 rounded-lg p-5 bg-gray-50 opacity-75"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
+                        <h3 className="text-lg font-semibold text-gray-600 line-through">{course.name}</h3>
+                        <span className="px-2 py-1 bg-gray-200 text-gray-600 text-sm font-semibold rounded">
+                          {course.credits} credits
+                        </span>
+                        <span className="px-2 py-1 bg-gray-200 text-gray-600 text-sm font-medium rounded">
+                          {course.code}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Users className="w-4 h-4" />
+                          <span>{course.instructor}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Calendar className="w-4 h-4" />
+                          <span>{course.schedule}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={() => undoWithdraw(course.id)}
+                      className="ml-4 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 hover:shadow-lg transition-all"
+                    >
+                      Undo
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
+  )
+}

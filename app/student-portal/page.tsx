@@ -157,15 +157,7 @@ export default function StudentPortal() {
       bgColor: "bg-cyan-50",
       textColor: "text-cyan-700",
     },
-    {
-      title: "View Result",
-      description: "Check semester results",
-      icon: BarChart3,
-      href: "/student-portal/view-result",
-      color: "from-teal-600 to-teal-800",
-      bgColor: "bg-teal-50",
-      textColor: "text-teal-700",
-    },
+    // 'View Result' removed from global dashboard: results are available per-semester via My Class -> Semester
   ]
 
   return (
