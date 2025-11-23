@@ -90,9 +90,9 @@ export default function RegularAttendancePage() {
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="font-medium">JOHN</span>
+                <span className="font-medium">Rajesh Sharma</span>
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">J</span>
+                  <span className="text-white text-xs">RS</span>
                 </div>
               </div>
               <Button onClick={() => router.push('/faculty-dashboard/attendance')} variant="outline" size="sm">

@@ -31,7 +31,7 @@ export default function ProgressReportPage() {
     { semester: "5", gpa: 8.3 },
     { semester: "6", gpa: 8.4 },
     { semester: "7", gpa: 8.5 },
-    { semester: "8", gpa: 8.6 },
+    // { semester: "8", gpa: 8.6 },
   ]
 
   // Filter CGPA data based on selected year

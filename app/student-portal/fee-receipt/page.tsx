@@ -16,7 +16,7 @@ export default function FeeReceiptPage() {
       date: "2024-06-15",
       semester: "Semester 3",
       type: "Tuition Fee",
-      status: "Downloaded",
+      status: "Available",
       paymentMethod: "Online Transfer",
     },
     {
@@ -52,7 +52,7 @@ export default function FeeReceiptPage() {
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Fee Receipts</h1>
-              <p className="text-sm text-gray-600">Download your fee payment receipts</p>
+              <p className="text-sm text-gray-600">Info about your fee payment receipts</p>
             </div>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function FeeReceiptPage() {
                     <p className="font-bold text-lg text-gray-800">₹{receipt.amount.toLocaleString()}</p>
                     <p className="text-xs text-gray-600">{receipt.paymentMethod}</p>
                   </div>
-                  <div className="flex gap-2">
+                  {/* <div className="flex gap-2">
                     <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
                       <Download className="w-4 h-4" />
                       Download
@@ -100,7 +100,7 @@ export default function FeeReceiptPage() {
                     <Button variant="outline" size="sm">
                       <Printer className="w-4 h-4" />
                     </Button>
-                  </div>
+                  </div> */}
                 </div>
               </CardContent>
             </Card>

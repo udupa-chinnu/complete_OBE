@@ -10,7 +10,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const [profileData] = useState({
     // Personal Details
-    studentId: "4SF001",
+    studentId: "4SF22CS001",
     name: "John",
     fathersName: "Robert Smith",
     mothersName: "Emma Smith",
@@ -27,11 +27,11 @@ export default function ProfilePage() {
 
     // Academic Details
     program: "B.Tech Computer Science",
-    currentSemester: "3",
-    cgpa: "3.8",
-    enrollmentYear: "2023",
-    batch: "2023-2027",
-    rollNumber: "23CS001",
+    currentSemester: "7",
+    cgpa: "8.3",
+    enrollmentYear: "2022",
+    batch: "2022-2026",
+    rollNumber: "34",
 
     // Educational Background
     board10: "ICSE",

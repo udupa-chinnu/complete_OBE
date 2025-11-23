@@ -20,7 +20,7 @@ export default function FeePayPage() {
       id: 1,
       amount: 50000,
       date: "2024-06-15",
-      semester: "Semester 3",
+      semester: "Semester 6",
       status: "Paid",
       type: "Tuition Fee",
       receiptNo: "REC/2024/001",
@@ -29,7 +29,7 @@ export default function FeePayPage() {
       id: 2,
       amount: 25000,
       date: "2024-07-10",
-      semester: "Semester 3",
+      semester: "Semester 6",
       status: "Paid",
       type: "Development Fee",
       receiptNo: "REC/2024/002",
@@ -38,7 +38,7 @@ export default function FeePayPage() {
       id: 3,
       amount: 25000,
       date: "2024-08-05",
-      semester: "Semester 3",
+      semester: "Semester 6",
       status: "Paid",
       type: "Library & Lab Fee",
       receiptNo: "REC/2024/003",
@@ -47,7 +47,7 @@ export default function FeePayPage() {
       id: 4,
       amount: 25000,
       date: "2024-09-01",
-      semester: "Semester 3",
+      semester: "Semester 6",
       status: "Pending",
       type: "Sports Fee",
       receiptNo: null,
@@ -56,7 +56,7 @@ export default function FeePayPage() {
       id: 5,
       amount: 25000,
       date: null,
-      semester: "Semester 3",
+      semester: "Semester 6",
       status: "Pending",
       type: "Examination Fee",
       receiptNo: null,
@@ -170,7 +170,7 @@ export default function FeePayPage() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex gap-4 mb-8">
+        {/* <div className="flex gap-4 mb-8">
           <Button className="bg-blue-600 hover:bg-blue-700">
             <CreditCard className="w-4 h-4 mr-2" />
             Pay Now
@@ -179,7 +179,7 @@ export default function FeePayPage() {
             <Download className="w-4 h-4 mr-2" />
             Download Fee Statement
           </Button>
-        </div>
+        </div> */}
 
         {/* Fee History */}
         <Card>
@@ -209,11 +209,11 @@ export default function FeePayPage() {
                       {fee.status}
                     </span>
                   </div>
-                  {fee.receiptNo && (
+                  {/* {fee.receiptNo && (
                     <Button variant="ghost" size="sm" className="ml-4">
                       <Download className="w-4 h-4" />
                     </Button>
-                  )}
+                  )} */}
                 </div>
               ))}
             </div>

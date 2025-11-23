@@ -28,15 +28,15 @@ const createFacultyUser = async () => {
 
     const facultyId = faculties[0].id;
 
-    const username = 'faculty';
-    const email = 'rajesh.ise@sahyadri.edu.in';
+    const username = 'faculty2';
+    const email = 'ravi.ise@sahyadri.edu.in';
     const password = 'faculty123';
     const userType = 'faculty';
 
     // Check if user already exists
     const [existing] = await connection.execute(
-      'SELECT id FROM users WHERE username = ? OR email = ?',
-      [username, email]
+      'SELECT id FROM users WHERE  email = ?',
+    [email]
     );
 
     if (existing.length > 0) {

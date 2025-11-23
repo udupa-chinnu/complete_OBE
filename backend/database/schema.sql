@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS institution_infrastructure (
 CREATE TABLE IF NOT EXISTS institution_recognitions (
     id INT PRIMARY KEY AUTO_INCREMENT,
     institution_id INT NOT NULL,
-    ugc_recognition_date DATE,
+    ugc_recognition_date YEAR,
     aicte_approval_year YEAR,
     nba_accreditation_details TEXT,
     naac_accreditation_details TEXT,

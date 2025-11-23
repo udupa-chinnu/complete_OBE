@@ -13,13 +13,13 @@ export default function MentorMenteePage() {
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
 
   const sections = [
-    { id: "swoc", title: "SWOC Analysis", description: "Strengths, Weaknesses, Opportunities, Challenges" },
+    { id: "progress", title: "Progress Report", description: "View CGPA and PO attainment graphs" },
     { id: "interaction", title: "Interaction Report", description: "Track mentor-mentee interactions" },
+    { id: "placement", title: "Placement Details", description: "Placement and internship information" },
     { id: "extracurricular", title: "Extra Curricular Activities", description: "Participate in college activities" },
     { id: "aicte", title: "AICTE 100 Point Activity", description: "AICTE sanctioned activities" },
+    { id: "swoc", title: "SWOC Analysis", description: "Strengths, Weaknesses, Opportunities, Challenges" },
     { id: "grievance", title: "Grievance", description: "Report and track grievances" },
-    { id: "placement", title: "Placement Details", description: "Placement and internship information" },
-    { id: "progress", title: "Progress Report", description: "View CGPA and PO attainment graphs" },
   ]
 
   return (

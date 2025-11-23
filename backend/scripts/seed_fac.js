@@ -18,73 +18,73 @@ const seedInstitutionData = async () => {
     // ---------------------------------------------------------
     // 1. Seed Faculty (Parent Table)
     // ---------------------------------------------------------
-    // const facultyQuery = `
-    //   INSERT INTO faculties (
-    //     faculty_id, title, first_name, middle_name, last_name, 
-    //     call_name, initials, designation, date_of_birth, gender, 
-    //     permanent_address, current_address, city, state, pincode, 
-    //     residence_number, personal_email, official_email, nationality, 
-    //     blood_group, is_active
-    //   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    // `;
+    const facultyQuery = `
+      INSERT INTO faculties (
+        faculty_id, title, first_name, middle_name, last_name, 
+        call_name, initials, designation, date_of_birth, gender, 
+        permanent_address, current_address, city, state, pincode, 
+        residence_number, personal_email, official_email, nationality, 
+        blood_group, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-    // const facultyValues = [
-    //   'FAC-2024-001',             // faculty_id
-    //   'Dr.',                      // title
-    //   'Rajesh',                   // first_name
-    //   'Kumar',                    // middle_name
-    //   'Sharma',                   // last_name
-    //   'Raj',                      // call_name
-    //   'R.K.S',                    // initials
-    //   'Associate Professor',      // designation
-    //   '1985-06-15',               // date_of_birth
-    //   'Male',                     // gender
-    //   '123, Gandhi Nagar, Main Rd', // permanent_address
-    //   '456, Staff Quarters, Block A', // current_address
-    //   'Bangalore',                // city
-    //   'Karnataka',                // state
-    //   '560001',                   // pincode
-    //   '080-22334455',             // residence_number
-    //   'rajesh.sharma@gmail.com',  // personal_email
-    //   'rajesh.cs@college.edu.in', // official_email
-    //   'Indian',                   // nationality
-    //   'O+',                       // blood_group
-    //   true                        // is_active
-    // ];
+    const facultyValues = [
+      'FAC003',             // faculty_id
+      'Mr',                      // title
+      'Ravi',                   // first_name
+      '',                    // middle_name
+      'Patel',                   // last_name
+      '',                      // call_name
+      '',                    // initials
+      'Assistant Professor',      // designation
+      '1999-06-15',               // date_of_birth
+      'Male',                     // gender
+      '123, Gandhi Nagar, Main Rd', // permanent_address
+      '456, Staff Quarters, Block A', // current_address
+      'Bangalore',                // city
+      'Karnataka',                // state
+      '560001',                   // pincode
+      '080-22334455',             // residence_number
+      'ravi.patel@gmail.com',  // personal_email
+      'ravi.ise@sahyadri.edu.in', // official_email
+      'Indian',                   // nationality
+      'O+',                       // blood_group
+      true                        // is_active
+    ];
 
-    // const [facultyResult] = await connection.execute(facultyQuery, facultyValues);
-    // const newFacultyId = facultyResult.insertId;
-    // console.log(`✅ Seeded Faculty with ID: ${newFacultyId}`);
+    const [facultyResult] = await connection.execute(facultyQuery, facultyValues);
+    const newFacultyId = facultyResult.insertId;
+    console.log(`✅ Seeded Faculty with ID: ${newFacultyId}`);
 
-    // // ---------------------------------------------------------
-    // // 2. Seed Faculty Employment (Child Table)
-    // // ---------------------------------------------------------
-    // const employmentQuery = `
-    //   INSERT INTO faculty_employment (
-    //     faculty_id, appointment_letter_number, appointment_date, 
-    //     parent_department, joining_date, designation_date, 
-    //     associate_type, currently_associated, appointed_to, 
-    //     academic_experience, research_experience, industry_experience
-    //   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    // `;
+    // ---------------------------------------------------------
+    // 2. Seed Faculty Employment (Child Table)
+    // ---------------------------------------------------------
+    const employmentQuery = `
+      INSERT INTO faculty_employment (
+        faculty_id, appointment_letter_number, appointment_date, 
+        parent_department, joining_date, designation_date, 
+        associate_type, currently_associated, appointed_to, 
+        academic_experience, research_experience, industry_experience
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-    // const employmentValues = [
-    //   newFacultyId,               // faculty_id (Foreign Key)
-    //   'APT/2015/CS/042',          // appointment_letter_number
-    //   '2015-08-01',               // appointment_date
-    //   'Information Science',         // parent_department
-    //   '2015-08-10',               // joining_date
-    //   '2020-06-01',               // designation_date (e.g. date of promotion)
-    //   'Regular',                  // associate_type
-    //   'Yes',                      // currently_associated
-    //   'Information Science & Engineering', // appointed_to
-    //   8.5,                        // academic_experience (years)
-    //   4.0,                        // research_experience (years)
-    //   2.0                         // industry_experience (years)
-    // ];
+    const employmentValues = [
+      newFacultyId,               // faculty_id (Foreign Key)
+      'APT/2015/IS/044',          // appointment_letter_number
+      '2015-08-01',               // appointment_date
+      'Information Science',         // parent_department
+      '2015-08-10',               // joining_date
+      '2020-06-01',               // designation_date (e.g. date of promotion)
+      'Regular',                  // associate_type
+      'Yes',                      // currently_associated
+      'Information Science & Engineering', // appointed_to
+      4.0,                        // academic_experience (years)
+      4.0,                        // research_experience (years)
+      2.0                         // industry_experience (years)
+    ];
 
-    // await connection.execute(employmentQuery, employmentValues);
-    // console.log(`✅ Seeded Employment details for Faculty ID: ${newFacultyId}`);
+    await connection.execute(employmentQuery, employmentValues);
+    console.log(`✅ Seeded Employment details for Faculty ID: ${newFacultyId}`);
 
     // ---------------------------------------------------------
     // 3. Seed Faculty Qualifications (Child Table)
@@ -98,11 +98,11 @@ const seedInstitutionData = async () => {
 
     const qualificationValues = [
       1,               // faculty_id (Foreign Key)
-      'PhD',                      // qualification_type
-      'Doctor of Philosophy',     // degree
+      'PG',                      // qualification_type
+      'Masters',     // degree
       'Machine Learning',         // specialization
       'Visvesvaraya Technological University', // university
-      2019,                       // year_of_completion
+      2015,                       // year_of_completion
       9.0,                       // percentage_cgpa (often NA for PhD)
       true                        // is_active
     ];

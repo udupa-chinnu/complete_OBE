@@ -244,9 +244,9 @@ export default function FacultyPage() {
                         <div className="font-medium">
                           {f.title} {f.first_name} {f.last_name}
                         </div>
-                        <div className="text-sm text-muted-foreground">
+                        {/* <div className="text-sm text-muted-foreground">
                           {f.qualifications?.[0]?.degree || 'No qualification listed'}
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </TableCell>

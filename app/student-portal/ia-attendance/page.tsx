@@ -13,10 +13,10 @@ export default function IAAttendancePage() {
       id: 1,
       name: "Data Structures",
       code: "CS201",
-      ia1: 18,
-      ia2: 17,
-      ia3: 19,
-      totalIA: 54,
+      ia1: 20,
+      ia2: 10,
+      ia3: 15,
+      totalIA: 45,
       totalClasses: 28,
       classesAttended: 26,
       attendancePercentage: 92.86,
@@ -103,7 +103,7 @@ export default function IAAttendancePage() {
               <div className="text-center">
                 <BarChart3 className="w-8 h-8 text-blue-600 mx-auto mb-2" />
                 <p className="text-sm text-gray-600">Overall IA Average</p>
-                <p className="text-3xl font-bold text-gray-800">52/60</p>
+                <p className="text-3xl font-bold text-gray-800">52/90</p>
               </div>
             </CardContent>
           </Card>
@@ -149,19 +149,19 @@ export default function IAAttendancePage() {
                       <div className="space-y-3">
                         <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
                           <span className="text-gray-700 font-medium">IA 1</span>
-                          <span className="text-lg font-bold text-blue-600">{subject.ia1}/20</span>
+                          <span className="text-lg font-bold text-blue-600">{subject.ia1}/30</span>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-green-50 rounded">
                           <span className="text-gray-700 font-medium">IA 2</span>
-                          <span className="text-lg font-bold text-green-600">{subject.ia2}/20</span>
+                          <span className="text-lg font-bold text-green-600">{subject.ia2}/30</span>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-orange-50 rounded">
                           <span className="text-gray-700 font-medium">IA 3</span>
-                          <span className="text-lg font-bold text-orange-600">{subject.ia3}/20</span>
+                          <span className="text-lg font-bold text-orange-600">{subject.ia3}/30</span>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-purple-50 rounded border-t-2 border-purple-200">
                           <span className="text-gray-800 font-bold">Total IA</span>
-                          <span className="text-lg font-bold text-purple-600">{subject.totalIA}/60</span>
+                          <span className="text-lg font-bold text-purple-600">{subject.totalIA}/90</span>
                         </div>
                       </div>
                     </div>

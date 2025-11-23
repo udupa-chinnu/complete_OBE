@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 
 const recognitionsFormSchema = z.object({
-  ugcRecognitionDate: z.string().min(1, "UGC recognition date is required"),
+  ugcRecognitionDate: z.string().min(1, "UGC recognition year is required"),
   aicteApprovalYear: z.string().min(1, "AICTE approval year is required"),
   nbaAccreditationDetails: z.string().optional(),
   naacAccreditationDetails: z.string().optional(),
@@ -54,7 +54,7 @@ export function InstitutionRecognitionsForm({ data, onSubmit, isEditing }: Insti
                 name="ugcRecognitionDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>UGC Approval Year</FormLabel>
+                    <FormLabel>UGC Approval Date</FormLabel>
                     <FormControl>
                       <Input {...field} type="text" disabled={!isEditing}  />
                     </FormControl>
