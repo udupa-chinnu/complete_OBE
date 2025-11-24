@@ -62,15 +62,8 @@ export default function AdminDashboard() {
       count: 1,
       label: "Achievements",
     },
-    {
-      title: "Appraisal Structure",
-      description: "Configure and manage faculty appraisal structures",
-      icon: <ClipboardList className="h-8 w-8" />,
-      href: "/admin/appraisals",
-      count: 2,
-      label: "Appraisal Types",
-    },
-    {
+    
+            {
       title: "Mandatory Uploads",
       description: "Manage mandatory document uploads and reports",
       icon: <Upload className="h-8 w-8" />,
@@ -78,6 +71,14 @@ export default function AdminDashboard() {
       count: 1,
       label: "Documents",
     },
+{    
+    title: "Appraisal Structure",
+    description: "Configure and manage faculty appraisal structures",
+    icon: <ClipboardList className="h-8 w-8" />,
+    href: "/admin/appraisals",
+    count: 2,
+    label: "Appraisal Types",
+  },
   ]
 
   return (

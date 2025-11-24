@@ -41,6 +41,28 @@ const initialAppraisals = [
     createdDate: "2023-06-10",
     status: "active",
   },
+  // {
+  //   id: 3,
+  //   name: "PERFORMANCE BASED APPRAISAL SYSTEM FOR ASSOCIATE PROFESSOR PART-B",
+  //   type: "Associate Professor",
+  //   year: "2024-25",
+  //   description:
+  //     "Point-based appraisal system for associate professors with sections for academic activities, research, and institutional contributions.",
+  //   createdBy: "Admin User",
+  //   createdDate: "2023-06-10",
+  //   status: "active",
+  // },
+  // {
+  //   id: 4,
+  //   name: "PERFORMANCE BASED APPRAISAL SYSTEM FOR PROFESSOR PART-B",
+  //   type: "Professor",
+  //   year: "2024-25",
+  //   description:
+  //     "Point-based appraisal system for professors with sections for academic activities, research, and institutional contributions.",
+  //   createdBy: "Admin User",
+  //   createdDate: "2023-06-10",
+  //   status: "active",
+  // },
 ]
 
 export default function AppraisalsPage() {

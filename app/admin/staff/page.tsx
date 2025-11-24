@@ -19,8 +19,9 @@ import { Badge } from "@/components/admin/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/admin/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/admin/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/admin/select"
+import { StaffForm } from "@/components/staff-form" // Importing the form component
 
-// Sample data for staff
+// Sample data for staff (Non-Teaching only)
 const initialStaff = [
   {
     id: 1,
@@ -41,24 +42,6 @@ const initialStaff = [
     status: "active",
   },
   {
-    id: 2,
-    fullName: "Priya Sharma",
-    employeeId: "ST002",
-    gender: "Female",
-    dateOfBirth: "1990-08-20",
-    dateOfJoining: "2015-08-20",
-    phoneNumber: "9876543211",
-    email: "priya.sharma@college.edu",
-    address: "456 Park Avenue, Bangalore",
-    staffType: "Teaching",
-    department: "Computer Science Engineering",
-    staffCategory: "Permanent",
-    designation: "Assistant Professor",
-    qualifications: "Ph.D. in Computer Science",
-    totalExperience: "8",
-    status: "active",
-  },
-  {
     id: 3,
     fullName: "Suresh Patel",
     employeeId: "ST003",
@@ -75,24 +58,6 @@ const initialStaff = [
     qualifications: "M.Lib",
     totalExperience: "12",
     status: "active",
-  },
-  {
-    id: 4,
-    fullName: "Anita Desai",
-    employeeId: "ST004",
-    gender: "Female",
-    dateOfBirth: "1988-07-05",
-    dateOfJoining: "2018-07-05",
-    phoneNumber: "9876543213",
-    email: "anita.desai@college.edu",
-    address: "101 Hill Road, Bangalore",
-    staffType: "Teaching",
-    department: "Information Science Engineering",
-    staffCategory: "Contractual",
-    designation: "Assistant Professor",
-    qualifications: "M.Tech in Information Technology",
-    totalExperience: "5",
-    status: "inactive",
   },
   {
     id: 5,
@@ -118,10 +83,14 @@ export default function StaffPage() {
   const [staff, setStaff] = useState(initialStaff)
   const [searchTerm, setSearchTerm] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState("")
-  const [staffTypeFilter, setStaffTypeFilter] = useState("")
+  
+  // State for Dialogs
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false) // Shared for Add and Edit
+  
   const [currentStaff, setCurrentStaff] = useState<any>(null)
+  const [isEditing, setIsEditing] = useState(false)
 
   // Filter staff based on search term and filters
   const filteredStaff = staff.filter((s) => {
@@ -133,9 +102,8 @@ export default function StaffPage() {
       s.department.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesDepartment = departmentFilter ? s.department === departmentFilter : true
-    const matchesStaffType = staffTypeFilter ? s.staffType === staffTypeFilter : true
 
-    return matchesSearch && matchesDepartment && matchesStaffType
+    return matchesSearch && matchesDepartment
   })
 
   const departments = [
@@ -148,7 +116,39 @@ export default function StaffPage() {
     "Accounts",
   ]
 
-  const staffTypes = ["Teaching", "Non-Teaching"]
+  // --- Actions ---
+
+  const handleAddStaff = () => {
+    setCurrentStaff(null)
+    setIsEditing(false)
+    setIsFormDialogOpen(true)
+  }
+
+  const handleEditStaff = (staffMember: any) => {
+    setCurrentStaff(staffMember)
+    setIsEditing(true)
+    setIsFormDialogOpen(true)
+  }
+
+  const handleFormSubmit = (formData: any) => {
+    if (isEditing) {
+      // Update existing staff
+      setStaff((prev) =>
+        prev.map((s) => (s.id === formData.id ? { ...s, ...formData } : s))
+      )
+    } else {
+      // Create new staff
+      const newId = Math.max(...staff.map((s) => s.id), 0) + 1
+      const newStaff = {
+        ...formData,
+        id: newId,
+        // If status wasn't set in form, default to active
+        status: formData.status || "active" 
+      }
+      setStaff((prev) => [...prev, newStaff])
+    }
+    setIsFormDialogOpen(false)
+  }
 
   const handleDeleteStaff = (id: number) => {
     setStaff(staff.map((s) => (s.id === id ? { ...s, status: s.status === "active" ? "inactive" : "active" } : s)))
@@ -160,13 +160,11 @@ export default function StaffPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Staff Management</h1>
-          <p className="text-muted-foreground">Manage teaching and non-teaching staff information and details</p>
+          <p className="text-muted-foreground">Manage non-teaching staff information and details</p>
         </div>
-        <Button asChild>
-          <a href="/admin/staff/add">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Staff
-          </a>
+        <Button onClick={handleAddStaff}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Staff
         </Button>
       </div>
 
@@ -195,25 +193,12 @@ export default function StaffPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={staffTypeFilter} onValueChange={setStaffTypeFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="All Staff Types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Staff Types</SelectItem>
-              {staffTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          
           <Button
             variant="outline"
             size="icon"
             onClick={() => {
               setDepartmentFilter("")
-              setStaffTypeFilter("")
               setSearchTerm("")
             }}
             title="Clear filters"
@@ -229,7 +214,6 @@ export default function StaffPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Employee ID</TableHead>
-              <TableHead>Staff Type</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Designation</TableHead>
               <TableHead>Status</TableHead>
@@ -239,7 +223,7 @@ export default function StaffPage() {
           <TableBody>
             {filteredStaff.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   No staff found.
                 </TableCell>
               </TableRow>
@@ -261,7 +245,6 @@ export default function StaffPage() {
                     </div>
                   </TableCell>
                   <TableCell>{s.employeeId}</TableCell>
-                  <TableCell>{s.staffType}</TableCell>
                   <TableCell>{s.department}</TableCell>
                   <TableCell>{s.designation}</TableCell>
                   <TableCell>
@@ -274,21 +257,7 @@ export default function StaffPage() {
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
                           <span className="sr-only">Open menu</span>
-                          <svg
-                            width="15"
-                            height="15"
-                            viewBox="0 0 15 15"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                          >
-                            <path
-                              d="M3.625 7.5C3.625 8.12132 3.12132 8.625 2.5 8.625C1.87868 8.625 1.375 8.12132 1.375 7.5C1.375 6.87868 1.87868 6.375 2.5 6.375C3.12132 6.375 3.625 6.87868 3.625 7.5ZM8.625 7.5C8.625 8.12132 8.12132 8.625 7.5 8.625C6.87868 8.625 6.375 8.12132 6.375 7.5C6.375 6.87868 6.87868 6.375 7.5 6.375C8.12132 6.375 8.625 6.87868 8.625 7.5ZM13.625 7.5C13.625 8.12132 13.1213 8.625 12.5 8.625C11.8787 8.625 11.375 8.12132 11.375 7.5C11.375 6.87868 11.8787 6.375 12.5 6.375C13.1213 6.375 13.625 6.87868 13.625 7.5Z"
-                              fill="currentColor"
-                              fillRule="evenodd"
-                              clipRule="evenodd"
-                            ></path>
-                          </svg>
+                          <Edit className="h-4 w-4" /> {/* Replaced SVG with Lucide Icon for consistency */}
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -299,13 +268,13 @@ export default function StaffPage() {
                           }}
                         >
                           <Eye className="mr-2 h-4 w-4" />
-                          View
+                          View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <a href={`/admin/staff/edit/${s.id}`}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </a>
+                        <DropdownMenuItem 
+                          onClick={() => handleEditStaff(s)}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
@@ -326,6 +295,27 @@ export default function StaffPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Add / Edit Staff Form Dialog */}
+      <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? "Edit Staff Member" : "Add New Staff Member"}</DialogTitle>
+            <DialogDescription>
+              {isEditing 
+                ? "Update the details of the staff member below." 
+                : "Enter the details for the new staff member."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Embed the StaffForm Component */}
+          <StaffForm 
+            staff={currentStaff} // Pass current data for editing, null for adding
+            onSubmit={handleFormSubmit} 
+            onCancel={() => setIsFormDialogOpen(false)} 
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* View Staff Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
@@ -368,7 +358,7 @@ export default function StaffPage() {
                   </div>
                   <div className="space-y-1">
                     <Label>Date of Birth</Label>
-                    <p>{new Date(currentStaff.dateOfBirth).toLocaleDateString()}</p>
+                    <p>{currentStaff.dateOfBirth}</p>
                   </div>
                   <div className="space-y-1">
                     <Label>Email</Label>
@@ -387,10 +377,6 @@ export default function StaffPage() {
               <TabsContent value="professional" className="space-y-4 pt-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-1">
-                    <Label>Staff Type</Label>
-                    <p>{currentStaff.staffType}</p>
-                  </div>
-                  <div className="space-y-1">
                     <Label>Department</Label>
                     <p>{currentStaff.department}</p>
                   </div>
@@ -404,15 +390,11 @@ export default function StaffPage() {
                   </div>
                   <div className="space-y-1">
                     <Label>Date of Joining</Label>
-                    <p>{new Date(currentStaff.dateOfJoining).toLocaleDateString()}</p>
+                    <p>{currentStaff.dateOfJoining}</p>
                   </div>
                   <div className="space-y-1">
                     <Label>Total Experience</Label>
                     <p>{currentStaff.totalExperience} years</p>
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Qualifications</Label>
-                    <p>{currentStaff.qualifications}</p>
                   </div>
                   <div className="space-y-1">
                     <Label>Status</Label>
@@ -422,12 +404,35 @@ export default function StaffPage() {
                       </Badge>
                     </p>
                   </div>
+                  <div className="space-y-1">
+                    <Label>Bank Name</Label>
+                    <p>{currentStaff.bankName || "-"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>IFSC Code</Label>
+                    <p>{currentStaff.ifscCode || "-"}</p>
+                  </div>
                 </div>
               </TabsContent>
               <TabsContent value="documents" className="space-y-4 pt-4">
-                <p className="text-sm text-muted-foreground">
-                  No documents have been uploaded for this staff member yet.
-                </p>
+                <div className="grid gap-4 md:grid-cols-2">
+                   <div className="p-4 border rounded bg-muted/10">
+                      <Label className="mb-2 block font-semibold">Aadhar Card</Label>
+                      {currentStaff.aadharCard ? (
+                        <span className="text-sm text-blue-600 underline cursor-pointer">View Document</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Not Uploaded</span>
+                      )}
+                   </div>
+                   <div className="p-4 border rounded bg-muted/10">
+                      <Label className="mb-2 block font-semibold">PAN Card</Label>
+                      {currentStaff.panCard ? (
+                        <span className="text-sm text-blue-600 underline cursor-pointer">View Document</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Not Uploaded</span>
+                      )}
+                   </div>
+                </div>
               </TabsContent>
             </Tabs>
           )}
@@ -435,8 +440,11 @@ export default function StaffPage() {
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
               Close
             </Button>
-            <Button asChild>
-              <a href={`/admin/staff/edit/${currentStaff?.id}`}>Edit Details</a>
+            <Button onClick={() => {
+                setIsViewDialogOpen(false);
+                handleEditStaff(currentStaff);
+            }}>
+              Edit Details
             </Button>
           </DialogFooter>
         </DialogContent>

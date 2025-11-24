@@ -19,6 +19,10 @@ export default function FacultyDashboard() {
     router.push("/academic")
   }
 
+  const handleReserachClick = () => {
+    router.push("/faculty-dashboard/research")
+  }
+
   const handleBackToRoleSelection = () => {
     router.push("/dashboard")
   }
@@ -87,12 +91,16 @@ export default function FacultyDashboard() {
           >
             Academic
           </Button>
-          <Button className="bg-red-500 hover:bg-red-600 text-white p-6 h-auto text-lg font-medium">Research</Button>
-          <Button className="bg-cyan-500 hover:bg-cyan-600 text-white p-6 h-auto text-lg font-medium">
-            Administration
-          </Button>
+          <Button className="bg-red-500 hover:bg-red-600 text-white p-6 h-auto text-lg font-medium" onClick={handleReserachClick}>Research</Button>
+          
           <Button onClick={handleAttendanceClick} className="bg-orange-500 hover:bg-orange-600 text-white p-6 h-auto text-lg font-medium">
             Attendance
+          </Button>
+          <Button onClick={handleAppraisalClick} className="bg-teal-400 hover:bg-teal-500 text-white p-6 h-auto text-lg font-medium">
+            Appraisal
+          </Button>
+          <Button className="bg-cyan-500 hover:bg-cyan-600 text-white p-6 h-auto text-lg font-medium">
+            Administration
           </Button>
           <Button className="bg-teal-500 hover:bg-teal-600 text-white p-6 h-auto text-lg font-medium">
             Mentor-Mentee
@@ -115,9 +123,7 @@ export default function FacultyDashboard() {
           <Button className="bg-red-600 hover:bg-red-700 text-white p-6 h-auto text-lg font-medium">
             Document Verification
           </Button>
-          <Button onClick={handleAppraisalClick} className="bg-teal-400 hover:bg-teal-500 text-white p-6 h-auto text-lg font-medium">
-            Appraisal
-          </Button>
+          
         </div>
 
         

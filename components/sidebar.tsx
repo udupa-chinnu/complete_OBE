@@ -52,16 +52,17 @@ const sidebarItems = [
     href: "/admin/achievements",
     icon: <Award className="h-5 w-5" />,
   },
-  {
-    title: "Appraisal Structure",
-    href: "/admin/appraisals",
-    icon: <ClipboardList className="h-5 w-5" />,
-  },
+  
   {
     title: "Mandatory Uploads",
     href: "/admin/uploads",
     icon: <Upload className="h-5 w-5" />,
   },
+  {
+  title: "Appraisal Structure",
+  href: "/admin/appraisals",
+  icon: <ClipboardList className="h-5 w-5" />,
+},
 ]
 
 export function Sidebar() {
