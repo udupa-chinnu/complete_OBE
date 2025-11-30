@@ -11,7 +11,7 @@ import { ChevronLeft, Eye } from "lucide-react"
 const submittedAppraisals = [
   {
     id: 1,
-    name: "Mr. Vasudeva Rao P V",
+    name: "Mr. John",
     designation: "Assistant Professor",
     department: "Information Science & Engineering",
     submittedDate: "2024-11-15",

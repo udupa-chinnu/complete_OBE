@@ -38,15 +38,16 @@ const sidebarItems = [
     icon: <GraduationCap className="h-5 w-5" />,
   },
   {
-    title: "Faculty Management",
-    href: "/admin/faculty",
-    icon: <Users className="h-5 w-5" />,
-  },
-  {
     title: "Staff Management",
     href: "/admin/staff",
     icon: <Users className="h-5 w-5" />,
   },
+  {
+    title: "Faculty Management",
+    href: "/admin/faculty",
+    icon: <Users className="h-5 w-5" />,
+  },
+  
   {
     title: "Institutional Achievements",
     href: "/admin/achievements",

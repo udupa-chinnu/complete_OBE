@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import Image from "next/image" // Import Image component
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,14 +23,12 @@ export default function LoginPage() {
     setError("")
     setIsLoading(true)
 
-    // Validation
+    // Simple validation
     if (!username || !password) {
       setError("Please enter both username and password")
       setIsLoading(false)
       return
     }
-   
-  
 
     try {
       // Call authentication API
@@ -69,7 +68,18 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center flex flex-col items-center">
+          {/* Added College Logo */}
+          <div className="mb-4 relative w-48 h-16">
+             <Image 
+               src="/images/sahyadri-logo.png" 
+               alt="College Logo" 
+               fill
+               className="object-contain"
+               priority
+             />
+          </div>
+          
           <CardTitle className="text-2xl font-bold text-gray-800">Digital Campus</CardTitle>
           <CardDescription>Multi-Role Login Portal</CardDescription>
         </CardHeader>

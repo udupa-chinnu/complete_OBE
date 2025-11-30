@@ -5,12 +5,10 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'OBE Portal',
+  description: 'OBE',
   generator: 'v0.app',
-  icons: {
-    icon: '/icon.svg',
-  },
+  
 }
 
 export default function RootLayout({
