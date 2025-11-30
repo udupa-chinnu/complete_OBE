@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChevronLeft, Send } from "lucide-react"
+import { ChevronLeft, Send, ArrowRight, Save } from "lucide-react"
 import PartAForm from "@/components/appraisal/part-a-form"
 import PartBForm from "@/components/appraisal/part-b-form"
 
@@ -20,6 +20,13 @@ export default function FacultyAppraisalPage() {
       router.push("/")
     }
   }, [router])
+
+  const handleSaveAndContinue = () => {
+    // Logic to persist Part A data would go here
+    // Switching to Part B
+    setActiveTab("part-b")
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const handleSubmitAppraisal = async () => {
     setIsSubmitting(true)
@@ -86,24 +93,33 @@ export default function FacultyAppraisalPage() {
 
           <TabsContent value="part-a" className="space-y-6">
             <PartAForm />
+            <div className="flex justify-end pt-4">
+              <Button 
+                onClick={handleSaveAndContinue}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save & Continue
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="part-b" className="space-y-6">
             <PartBForm />
+            <div className="flex justify-center mt-8">
+              {/* Submit Button */}
+              <Button
+                onClick={handleSubmitAppraisal}
+                disabled={isSubmitting}
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-2 flex items-center space-x-2"
+              >
+                <Send className="w-4 h-4" />
+                <span>{isSubmitting ? "Submitting..." : "Submit Appraisal to HOD"}</span>
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
-
-        {/* Submit Button */}
-        <div className="flex justify-center mt-8">
-          <Button
-            onClick={handleSubmitAppraisal}
-            disabled={isSubmitting}
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-2 flex items-center space-x-2"
-          >
-            <Send className="w-4 h-4" />
-            <span>{isSubmitting ? "Submitting..." : "Submit Appraisal to HOD"}</span>
-          </Button>
-        </div>
       </div>
     </div>
   )

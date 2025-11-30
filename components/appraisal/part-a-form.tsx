@@ -1253,7 +1253,7 @@ export default function PartAForm() {
                             examinationWork.map((w) => (w.id === work.id ? { ...w, role: e.target.value } : w)),
                           )
                         }
-                        className="min-h-8 text-xs"
+                        className="text-s"
                       />
                     </td>
                     <td className="border px-3 py-2">

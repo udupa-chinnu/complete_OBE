@@ -5,7 +5,22 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Plus, Trash2 } from "lucide-react"
+
+interface InnovativeRow {
+  id: string
+  idea: string
+  assignments: string
+  details: string
+}
+
+interface MethodologyRow {
+  id: string
+  methodology: string
+  tools: string
+  details: string
+}
 
 interface AcademicRow {
   id: string
@@ -15,99 +30,31 @@ interface AcademicRow {
   pointsByHod: string
 }
 
-interface InnovativeRow {
-  id: string
-  slNo: string
-  idea: string
-  numAssignments: string
-  details: string
-}
-
-interface MethodologyRow {
-  id: string
-  slNo: string
-  methodology: string
-  tools: string
-  details: string
-}
+// Helper to create a unique ID for new subjects
+const generateId = () => Math.random().toString(36).substr(2, 9)
 
 export default function PartBForm() {
-  const [academicEven, setAcademicEven] = useState<AcademicRow[]>([
-    {
-      id: "1",
-      component:
-        "SUBJECT 1: Web Technology and Application (4A) - Classes Taken: 40 Hrs. [Points = (No. of classes taken/N*) × 10]",
-      maxPoints: "10",
-      pointsEarned: "10",
-      pointsByHod: "",
-    },
-    {
-      id: "2",
-      component: "% Results [Points = %Pass × 0.05]",
-      maxPoints: "5",
-      pointsEarned: "4.7",
-      pointsByHod: "",
-    },
-    {
-      id: "3",
-      component: "Student Feedback [Points = (% Feedback Score – 50) × 0.2]",
-      maxPoints: "10",
-      pointsEarned: "4.5",
-      pointsByHod: "",
-    },
-  ])
+  // --- State for Fixed Input Fields (Section A) ---
+  const [formData, setFormData] = useState<Record<string, string>>({})
 
+  // --- State for Dynamic Subjects (Section A) ---
+  const [subjects, setSubjects] = useState<{ id: string }[]>([{ id: "sub_1" }])
+
+  // --- State for Dynamic Tables (Section A: Innovative Assignments & Methodologies) ---
   const [innovativeAssignments, setInnovativeAssignments] = useState<InnovativeRow[]>([
-    {
-      id: "1",
-      slNo: "1.",
-      idea: "A case study on the working of the IRCTC Tatkal ticket booking",
-      numAssignments: "1",
-      details:
-        "Students were made to do a partial booking of train ticket and explained how race condition would affect the real time booking processes",
-    },
+    { id: "1", idea: "", assignments: "", details: "" },
   ])
 
-  const [innovativeMethodology, setInnovativeMethodology] = useState<MethodologyRow[]>([
-    {
-      id: "1",
-      slNo: "1.",
-      methodology:
-        "Illustration of real time examples of Bank, Restaurants, Remote & Shell examples for delivering the key concepts of processes, deadlocks etc.",
-      tools: "Videos",
-      details: "Video links shared to the students for understanding the key concepts",
-    },
+  const [innovativeMethodologies, setInnovativeMethodologies] = useState<MethodologyRow[]>([
+    { id: "1", methodology: "", tools: "", details: "" },
   ])
 
-  const [academicOdd, setAcademicOdd] = useState<AcademicRow[]>([
-    {
-      id: "1",
-      component:
-        "SUBJECT 1: Database Management Systems (5A) - Classes Taken: 40 Hrs. [Points = (No. of classes taken/N*) × 10]",
-      maxPoints: "10",
-      pointsEarned: "10",
-      pointsByHod: "",
-    },
-    {
-      id: "2",
-      component: "% Results [Points = %Pass × 0.05]",
-      maxPoints: "5",
-      pointsEarned: "4.8",
-      pointsByHod: "",
-    },
-    {
-      id: "3",
-      component: "Student Feedback [Points = (% Feedback Score – 50) × 0.2]",
-      maxPoints: "10",
-      pointsEarned: "6.5",
-      pointsByHod: "",
-    },
-  ])
+  // --- Section B, C & Others (from second file) ---
 
   const [research, setResearch] = useState<AcademicRow[]>([
     {
       id: "1",
-      component: "Research Proposals Applied for Funding - 2 Proposals submitted to KSCST",
+      component: "Research Proposals Applied for Funding",
       maxPoints: "10",
       pointsEarned: "10",
       pointsByHod: "",
@@ -380,335 +327,999 @@ export default function PartBForm() {
     },
   ])
 
-  const updateRow = (data: any[], setData: any, id: string, field: string, value: string) => {
-    setData((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
+  const isEditable = true
+
+  // --- Handlers for Section A ---
+
+  const handleInputChange = (key: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const addSubject = () => {
+    setSubjects((prev) => [...prev, { id: generateId() }])
+  }
+
+  const removeSubject = (id: string) => {
+    setSubjects((prev) => (prev.length > 1 ? prev.filter((s) => s.id !== id) : prev))
+  }
+
+  // Helper to render "Points Earned" input (editable)
+  const renderScoreInput = (key: string) => (
+    <Input
+      className="h-8 w-full text-center min-w-[60px]"
+      value={formData[key] || ""}
+      onChange={(e) => handleInputChange(key, e.target.value)}
+      disabled={!isEditable}
+    />
+  )
+
+  // Helper to render "Points by HOD" (non-editable & blank)
+  const renderHodInput = () => (
+    <Input
+      className="h-8 w-full text-center bg-gray-100 text-gray-500 cursor-not-allowed min-w-[60px]"
+      value=""
+      disabled
+      placeholder=""
+    />
+  )
+
+  // --- Section C Handlers (Innovative Assignments / Methodologies inside Section A) ---
+  const addAssignmentRow = () => {
+    const newId = (innovativeAssignments.length + 1).toString()
+    setInnovativeAssignments([...innovativeAssignments, { id: newId, idea: "", assignments: "", details: "" }])
+  }
+
+  const deleteAssignmentRow = (id: string) => {
+    setInnovativeAssignments(innovativeAssignments.filter((row) => row.id !== id))
+  }
+
+  const addMethodologyRow = () => {
+    const newId = (innovativeMethodologies.length + 1).toString()
+    setInnovativeMethodologies([
+      ...innovativeMethodologies,
+      { id: newId, methodology: "", tools: "", details: "" },
+    ])
+  }
+
+  const deleteMethodologyRow = (id: string) => {
+    setInnovativeMethodologies(innovativeMethodologies.filter((row) => row.id !== id))
+  }
+
+  // --- Generic Row Updater (for Section B/C tables) ---
+  const updateRow = (data: AcademicRow[], setData: any, id: string, field: keyof AcademicRow, value: string) => {
+    setData((prev: AcademicRow[]) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
   }
 
   const addRow = (data: any[], setData: any, template: any) => {
     const newId = (Math.max(...data.map((d) => Number.parseInt(d.id) || 0), 0) + 1).toString()
-    setData((prev) => [...prev, { ...template, id: newId }])
+    setData((prev: any[]) => [...prev, { ...template, id: newId }])
   }
+
+  // --- Helpers for totals ---
+
+  const toNum = (v: string | undefined) => {
+    const n = Number.parseFloat(v ?? "")
+    return Number.isNaN(n) ? 0 : n
+  }
+
+  // Total for SECTION A (Academic) based on all Points Earned fields
+  const calculateAcademicSectionTotal = () => {
+    let total = 0
+
+    // For each subject: teaching, results, feedback
+    subjects.forEach((subject) => {
+      total += toNum(formData[`${subject.id}_teaching_score`])
+      total += toNum(formData[`${subject.id}_results_score`])
+      total += toNum(formData[`${subject.id}_feedback_score`])
+    })
+
+    // Lab related
+    total += toNum(formData["lab_hours_score"])
+    total += toNum(formData["lab_results_score"])
+    total += toNum(formData["lab_feedback_score"])
+
+    // Other academic items
+    total += toNum(formData["academic_record_score"])
+    total += toNum(formData["lab_established_score"])
+    total += toNum(formData["innovative_assign_score"])
+    total += toNum(formData["innovative_method_score"])
+
+    return total
+  }
+
+  const academicSectionTotal = calculateAcademicSectionTotal()
+
+  const researchTotal = research.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
+  const publicationsTotal = publications.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
+  const professionalTotal = professional.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
+  const departmentalTotal = departmental.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
+  const institutionalTotal = institutional.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
+
+  const sectionBTotal = researchTotal + publicationsTotal + professionalTotal
+  const sectionCTotal = departmentalTotal + institutionalTotal
+  const grandTotal = academicSectionTotal + sectionBTotal + sectionCTotal
 
   return (
     <div className="space-y-6">
-      {/* SECTION A: ACADEMIC ACTIVITIES */}
+      {/* SECTION A: ACADEMIC ACTIVITIES (from first snippet, wrapped in Card) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">SECTION A: ACADEMIC ACTIVITIES (200 Points)</CardTitle>
+          <CardTitle className="text-lg">SECTION A: Academic Activities (200 Points)</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* A1. EVEN SEMESTER */}
-          <div>
-            <h3 className="font-bold text-base mb-3 text-blue-700">A1. EVEN SEMESTER 2023-24 (100 Points)</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-gray-200">
-                    <th className="border px-2 py-2 text-left">S. No.</th>
-                    <th className="border px-2 py-2 text-left">Component</th>
-                    <th className="border px-2 py-2 text-center">Max. Points</th>
-                    <th className="border px-2 py-2 text-center">Points Earned</th>
-                    <th className="border px-2 py-2 text-center">Points by HOD</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {academicEven.map((row, idx) => (
-                    <tr key={row.id} className="hover:bg-gray-50">
-                      <td className="border px-2 py-2 text-center text-xs">{idx + 1}</td>
-                      <td className="border px-2 py-2">
-                        <Textarea
-                          value={row.component}
-                          onChange={(e) =>
-                            updateRow(academicEven, setAcademicEven, row.id, "component", e.target.value)
-                          }
-                          className="text-xs min-h-8"
-                        />
-                      </td>
-                      <td className="border px-2 py-2 text-center">
-                        <Input
-                          value={row.maxPoints}
-                          className="h-8 text-center text-xs"
-                          disabled={true}
-                        />
-                      </td>
-                      <td className="border px-2 py-2 text-center">
-                        <Input
-                          value={row.pointsEarned}
-                          onChange={(e) =>
-                            updateRow(academicEven, setAcademicEven, row.id, "pointsEarned", e.target.value)
-                          }
-                          className="h-8 text-center text-xs"
-                        />
-                      </td>
-                      <td className="border px-2 py-2 bg-gray-100 text-gray-500 cursor-not-allowed text-center text-xs">
-                        -
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="bg-gray-100 font-bold">
-                    <td colSpan={2} className="border px-2 py-2 text-center">
-                      Total
-                    </td>
-                    <td className="border px-2 py-2 text-center">100</td>
-                    <td className="border px-2 py-2 text-center">
-                      {academicEven
-                        .reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
-                        .toFixed(1)}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="min-w-[800px]">
+              <TableHeader>
+                <TableRow className="bg-gray-100">
+                  <TableHead colSpan={5} className="text-center font-bold text-blue-700 border-b">
+                    A1. EVEN SEMESTER 2024-25 (100 Points)
+                  </TableHead>
+                </TableRow>
+                <TableRow className="bg-gray-100">
+                  <TableHead colSpan={5} className="text-center font-bold text-black border-b">
+                    TEACHING WORKLOAD - SUBJECTS AND LABS
+                  </TableHead>
+                </TableRow>
+                <TableRow>
+                  <TableHead className="border-r w-[50px] whitespace-nowrap">No.</TableHead>
+                  <TableHead className="border-r min-w-[300px]">Component</TableHead>
+                  <TableHead className="border-r w-[100px] text-center whitespace-nowrap">Max. Points</TableHead>
+                  <TableHead className="border-r w-[120px] text-center whitespace-nowrap">Points Earned</TableHead>
+                  <TableHead className="w-[120px] text-center whitespace-nowrap">Points by HOD</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+  {/* DYNAMIC SUBJECTS */}
+{subjects.map((subject, index) => {
+  const taken = Number(formData[`${subject.id}_taken`] || 0)
+  const allotted = Number(formData[`${subject.id}_allotted`] || 0)
 
-            {/* Innovative Assignments */}
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-bold text-sm mb-2">Innovative Assignments Given to Students</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-blue-100">
-                      <th className="border px-2 py-1 text-left">S. No</th>
-                      <th className="border px-2 py-1 text-left">Innovative Idea</th>
-                      <th className="border px-2 py-1 text-left">No. of Assignments</th>
-                      <th className="border px-2 py-1 text-left">Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {innovativeAssignments.map((row) => (
-                      <tr key={row.id} className="hover:bg-white">
-                        <td className="border px-2 py-1 text-xs">{row.slNo}</td>
-                        <td className="border px-2 py-1">
-                          <Input
-                            value={row.idea}
-                            onChange={(e) =>
-                              setInnovativeAssignments(
-                                innovativeAssignments.map((r) =>
-                                  r.id === row.id ? { ...r, idea: e.target.value } : r,
-                                ),
-                              )
-                            }
-                            className="h-6 text-xs"
-                          />
-                        </td>
-                        <td className="border px-2 py-1">
-                          <Input
-                            value={row.numAssignments}
-                            onChange={(e) =>
-                              setInnovativeAssignments(
-                                innovativeAssignments.map((r) =>
-                                  r.id === row.id ? { ...r, numAssignments: e.target.value } : r,
-                                ),
-                              )
-                            }
-                            className="h-6 text-xs text-center"
-                          />
-                        </td>
-                        <td className="border px-2 py-1">
-                          <Input
-                            value={row.details}
-                            onChange={(e) =>
-                              setInnovativeAssignments(
-                                innovativeAssignments.map((r) =>
-                                  r.id === row.id ? { ...r, details: e.target.value } : r,
-                                ),
-                              )
-                            }
-                            className="h-6 text-xs"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <Button
-                onClick={() =>
-                  addRow(innovativeAssignments, setInnovativeAssignments, {
-                    slNo: "",
-                    idea: "",
-                    numAssignments: "",
-                    details: "",
-                  })
-                }
-                size="sm"
-                className="bg-blue-500 hover:bg-blue-600 mt-2"
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                Add Assignment
-              </Button>
-            </div>
+  // Auto calculate score
+  const calculatedScore =
+    allotted > 0 ? ((taken / allotted) * 10).toFixed(1) : ""
 
-            {/* Innovative Methodology */}
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-bold text-sm mb-2">Innovative Teaching Methodologies</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-green-100">
-                      <th className="border px-2 py-1 text-left">S. No</th>
-                      <th className="border px-2 py-1 text-left">Innovative Methodology</th>
-                      <th className="border px-2 py-1 text-left">Tools</th>
-                      <th className="border px-2 py-1 text-left">Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {innovativeMethodology.map((row) => (
-                      <tr key={row.id} className="hover:bg-white">
-                        <td className="border px-2 py-1 text-xs">{row.slNo}</td>
-                        <td className="border px-2 py-1">
-                          <Input
-                            value={row.methodology}
-                            onChange={(e) =>
-                              setInnovativeMethodology(
-                                innovativeMethodology.map((r) =>
-                                  r.id === row.id ? { ...r, methodology: e.target.value } : r,
-                                ),
-                              )
-                            }
-                            className="h-6 text-xs"
-                          />
-                        </td>
-                        <td className="border px-2 py-1">
-                          <Input
-                            value={row.tools}
-                            onChange={(e) =>
-                              setInnovativeMethodology(
-                                innovativeMethodology.map((r) =>
-                                  r.id === row.id ? { ...r, tools: e.target.value } : r,
-                                ),
-                              )
-                            }
-                            className="h-6 text-xs"
-                          />
-                        </td>
-                        <td className="border px-2 py-1">
-                          <Input
-                            value={row.details}
-                            onChange={(e) =>
-                              setInnovativeMethodology(
-                                innovativeMethodology.map((r) =>
-                                  r.id === row.id ? { ...r, details: e.target.value } : r,
-                                ),
-                              )
-                            }
-                            className="h-6 text-xs"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <Button
-                onClick={() =>
-                  addRow(innovativeMethodology, setInnovativeMethodology, {
-                    slNo: "",
-                    methodology: "",
-                    tools: "",
-                    details: "",
-                  })
-                }
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 mt-2"
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                Add Methodology
-              </Button>
-            </div>
+  // Sync into formData (non-editable)
+  if (formData[`${subject.id}_teaching_score`] !== calculatedScore) {
+    setFormData((prev) => ({
+      ...prev,
+      [`${subject.id}_teaching_score`]: calculatedScore,
+    }))
+  }
 
-            <Button
-              onClick={() =>
-                addRow(academicEven, setAcademicEven, {
-                  component: "",
-                  maxPoints: "",
-                  pointsEarned: "",
-                  pointsByHod: "",
-                })
+  return (
+    <>
+      <TableRow key={`${subject.id}-header`} className="bg-gray-50/50">
+        {/* No. column */}
+        <TableCell className="border-r font-medium align-top pt-3">
+          {index + 1}.
+        </TableCell>
+
+        {/* Component column */}
+        <TableCell className="border-r font-bold">
+          <div className="flex items-center justify-between gap-2">
+            <span>SUBJECT {index + 1}:</span>
+
+            {/* Subject Name Input */}
+            <Input
+              className="h-7 w-56"
+              placeholder="Enter subject name"
+              value={formData[`${subject.id}_name`] || ""}
+              onChange={(e) =>
+                handleInputChange(`${subject.id}_name`, e.target.value)
               }
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700 mt-4"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Component
-            </Button>
+            />
+
+            {/* Remove button */}
+            {subjects.length > 1 && isEditable && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                onClick={() => removeSubject(subject.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </TableCell>
+
+        <TableCell className="border-r" />
+        <TableCell className="border-r" />
+        <TableCell />
+      </TableRow>
+
+      {/* a) Classes Taken */}
+      <TableRow key={`${subject.id}-classes`}>
+        <TableCell className="border-r" />
+        <TableCell className="border-r">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">a)</span>
+            <span>Classes Taken:</span>
+            <Input
+              className="h-7 w-20 inline-block"
+              value={formData[`${subject.id}_taken`] || ""}
+              onChange={(e) =>
+                handleInputChange(`${subject.id}_taken`, e.target.value)
+              }
+            />
+            <span>Hrs.</span>
+          </div>
+        </TableCell>
+        <TableCell className="border-r text-center">10</TableCell>
+
+        {/* Auto calculated, non-editable */}
+        <TableCell className="border-r">
+          <Input
+            className="h-8 w-full text-center bg-gray-100 text-gray-700 font-semibold"
+            value={calculatedScore}
+            disabled
+          />
+        </TableCell>
+
+        <TableCell>{renderHodInput()}</TableCell>
+      </TableRow>
+
+      {/* b) Allotted */}
+      <TableRow key={`${subject.id}-allotted`}>
+        <TableCell className="border-r" />
+        <TableCell className="border-r">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">b)</span>
+            <span>Allotted (N*):</span>
+            <Input
+              className="h-7 w-20 inline-block"
+              value={formData[`${subject.id}_allotted`] || ""}
+              onChange={(e) =>
+                handleInputChange(`${subject.id}_allotted`, e.target.value)
+              }
+            />
+            <span>Hrs.</span>
+          </div>
+        </TableCell>
+        <TableCell className="border-r" />
+        <TableCell className="border-r" />
+        <TableCell />
+      </TableRow>
+
+      {/* Formula */}
+      <TableRow key={`${subject.id}-formula`}>
+        <TableCell className="border-r" />
+        <TableCell className="border-r">
+          <span className="text-xs text-muted-foreground italic ml-6">
+            [Points = (No. of classes taken / N*) × 10]
+          </span>
+        </TableCell>
+        <TableCell className="border-r" />
+        <TableCell className="border-r" />
+        <TableCell />
+      </TableRow>
+
+      {/* % Results */}
+      <TableRow key={`${subject.id}-results`}>
+        <TableCell className="border-r" />
+        <TableCell className="border-r">
+          % Results [Points = %Pass × 0.05]
+        </TableCell>
+        <TableCell className="border-r text-center">5</TableCell>
+        <TableCell className="border-r">
+          {renderScoreInput(`${subject.id}_results_score`)}
+        </TableCell>
+        <TableCell>{renderHodInput()}</TableCell>
+      </TableRow>
+
+      {/* Student Feedback */}
+      <TableRow key={`${subject.id}-feedback`}>
+        <TableCell className="border-r" />
+        <TableCell className="border-r">
+          Student Feedback [Points = (% Feedback Score - 50) × 0.2]
+        </TableCell>
+        <TableCell className="border-r text-center">10</TableCell>
+        <TableCell className="border-r">
+          {renderScoreInput(`${subject.id}_feedback_score`)}
+        </TableCell>
+        <TableCell>{renderHodInput()}</TableCell>
+      </TableRow>
+    </>
+  )
+})}
+
+{/* Add Subject Button Row */}
+<TableRow>
+  <TableCell colSpan={5} className="p-2">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={addSubject}
+      className="w-full border-dashed bg-blue-100 text-blue-700 hover:bg-blue-200"
+    >
+      <Plus className="mr-2 h-4 w-4" /> Add Subject
+    </Button>
+  </TableCell>
+</TableRow>
+
+                {/* OTHER ITEMS (Renumbered dynamically) */}
+                <TableRow>
+                  <TableCell className="border-r font-medium">{subjects.length + 1}.</TableCell>
+                  <TableCell className="border-r">
+                    Academic Record Keeping (OBE/NBA/NAAC/VTU/LIC Etc.)
+                  </TableCell>
+                  <TableCell className="border-r text-center">5</TableCell>
+                  <TableCell className="border-r">
+                    {renderScoreInput("academic_record_score")}
+                  </TableCell>
+                  <TableCell>{renderHodInput()}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="border-r font-medium">{subjects.length + 2}.</TableCell>
+                  <TableCell className="border-r">
+                    Laboratory Established/Lab. Instruction Manuals developed/Introducing Design based Experiments
+                    {/* (Case Studies/Data Collections/Analysis for MBA) */}
+                  </TableCell>
+                  <TableCell className="border-r text-center">10</TableCell>
+                  <TableCell className="border-r">
+                    {renderScoreInput("lab_established_score")}
+                  </TableCell>
+                  <TableCell>{renderHodInput()}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="border-r font-medium">{subjects.length + 3}.</TableCell>
+                  <TableCell className="border-r">
+                    Innovative Assignments given to Students (Mention below)
+                  </TableCell>
+                  <TableCell className="border-r text-center">10</TableCell>
+                  <TableCell className="border-r">
+                    {renderScoreInput("innovative_assign_score")}
+                  </TableCell>
+                  <TableCell>{renderHodInput()}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
 
-          {/* A2. ODD SEMESTER */}
-          <div className="mt-6 pt-6 border-t">
-            <h3 className="font-bold text-base mb-3 text-blue-700">A2. ODD SEMESTER 2024-25 (100 Points)</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-gray-200">
-                    <th className="border px-2 py-2 text-left">S. No.</th>
-                    <th className="border px-2 py-2 text-left">Component</th>
-                    <th className="border px-2 py-2 text-center">Max. Points</th>
-                    <th className="border px-2 py-2 text-center">Points Earned</th>
-                    <th className="border px-2 py-2 text-center">Points by HOD</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {academicOdd.map((row, idx) => (
-                    <tr key={row.id} className="hover:bg-gray-50">
-                      <td className="border px-2 py-2 text-center text-xs">{idx + 1}</td>
-                      <td className="border px-2 py-2">
-                        <Textarea
-                          value={row.component}
-                          onChange={(e) => updateRow(academicOdd, setAcademicOdd, row.id, "component", e.target.value)}
-                          className="text-xs min-h-8"
-                        />
-                      </td>
-                      <td className="border px-2 py-2 text-center">
-                        <Input
-                          value={row.maxPoints}
-                          //onChange={(e) => updateRow(academicOdd, setAcademicOdd, row.id, "maxPoints", e.target.value)}
-                          className="h-8 text-center text-xs"
-                          disabled={true}
-                        />
-                      </td>
-                      <td className="border px-2 py-2 text-center">
-                        <Input
-                          value={row.pointsEarned}
-                          onChange={(e) =>
-                            updateRow(academicOdd, setAcademicOdd, row.id, "pointsEarned", e.target.value)
-                          }
-                          className="h-8 text-center text-xs"
-                        />
-                      </td>
-                      <td className="border px-2 py-2 bg-gray-100 text-gray-500 cursor-not-allowed text-center text-xs">
-                        -
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="bg-gray-100 font-bold">
-                    <td colSpan={2} className="border px-2 py-2 text-center">
-                      Total
-                    </td>
-                    <td className="border px-2 py-2 text-center">100</td>
-                    <td className="border px-2 py-2 text-center">
-                      {academicOdd.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0).toFixed(1)}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <Button
-              onClick={() =>
-                addRow(academicOdd, setAcademicOdd, { component: "", maxPoints: "", pointsEarned: "", pointsByHod: "" })
-              }
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700 mt-3"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Component
-            </Button>
+          {/* Innovative Assignments Table */}
+          <div className="rounded-md border bg-blue-50/30 overflow-x-auto">
+            <Table className="min-w-[700px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="border-r w-[60px]">Sl. No.</TableHead>
+                  <TableHead className="border-r min-w-[200px]">Innovative Idea</TableHead>
+                  <TableHead className="border-r w-[150px]">No of Assignments</TableHead>
+                  <TableHead className={isEditable ? "border-r min-w-[200px]" : "min-w-[200px]"}>
+                    Details
+                  </TableHead>
+                  {isEditable && <TableHead className="w-[50px]">Actions</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {innovativeAssignments.map((row, idx) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="border-r text-center">{idx + 1}.</TableCell>
+                    <TableCell className="border-r">
+                      <Input
+                        value={row.idea}
+                        onChange={(e) => {
+                          const updated = innovativeAssignments.map((item) =>
+                            item.id === row.id ? { ...item, idea: e.target.value } : item,
+                          )
+                          setInnovativeAssignments(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0"
+                        placeholder="Enter idea..."
+                      />
+                    </TableCell>
+                    <TableCell className="border-r">
+                      <Input
+                        value={row.assignments}
+                        onChange={(e) => {
+                          const updated = innovativeAssignments.map((item) =>
+                            item.id === row.id ? { ...item, assignments: e.target.value } : item,
+                          )
+                          setInnovativeAssignments(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0 text-center"
+                      />
+                    </TableCell>
+                    <TableCell className={isEditable ? "border-r" : ""}>
+                      <Input
+                        value={row.details}
+                        onChange={(e) => {
+                          const updated = innovativeAssignments.map((item) =>
+                            item.id === row.id ? { ...item, details: e.target.value } : item,
+                          )
+                          setInnovativeAssignments(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0"
+                        placeholder="Details..."
+                      />
+                    </TableCell>
+                    {isEditable && (
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteAssignmentRow(row.id)}
+                          disabled={innovativeAssignments.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {isEditable && (
+              <div className="p-2 border-t">
+                <Button variant="outline" size="sm" onClick={addAssignmentRow} className="text-blue-600">
+                  <Plus className="mr-2 h-4 w-4" /> Add Assignment Row
+                </Button>
+              </div>
+            )}
           </div>
+
+          {/* Innovative Teaching Methodologies header row (with score) */}
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="min-w-[800px]">
+              <TableBody>
+                <TableRow>
+                  <TableCell className="border-r font-medium w-[50px]">{subjects.length + 4}.</TableCell>
+                  <TableCell className="border-r min-w-[300px]">
+                    Innovative Teaching Methodologies incorporated (Mention below)
+                  </TableCell>
+                  <TableCell className="border-r w-[100px] text-center">5</TableCell>
+                  <TableCell className="border-r w-[120px]">
+                    {renderScoreInput("innovative_method_score")}
+                  </TableCell>
+                  <TableCell className="w-[120px]">
+                    {renderHodInput()}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Innovative Teaching Methodologies Table */}
+          <div className="rounded-md border bg-green-50/30 overflow-x-auto">
+            <Table className="min-w-[700px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="border-r w-[60px]">Sl. No.</TableHead>
+                  <TableHead className="border-r min-w-[200px]">Innovative Methodology</TableHead>
+                  <TableHead className="border-r w-[150px]">Tools</TableHead>
+                  <TableHead className={isEditable ? "border-r min-w-[200px]" : "min-w-[200px]"}>
+                    Details
+                  </TableHead>
+                  {isEditable && <TableHead className="w-[50px]">Actions</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {innovativeMethodologies.map((row, idx) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="border-r text-center">{idx + 1}.</TableCell>
+                    <TableCell className="border-r">
+                      <Input
+                        value={row.methodology}
+                        onChange={(e) => {
+                          const updated = innovativeMethodologies.map((item) =>
+                            item.id === row.id ? { ...item, methodology: e.target.value } : item,
+                          )
+                          setInnovativeMethodologies(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0"
+                        placeholder="Methodology..."
+                      />
+                    </TableCell>
+                    <TableCell className="border-r">
+                      <Input
+                        value={row.tools}
+                        onChange={(e) => {
+                          const updated = innovativeMethodologies.map((item) =>
+                            item.id === row.id ? { ...item, tools: e.target.value } : item,
+                          )
+                          setInnovativeMethodologies(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0"
+                        placeholder="Tools used..."
+                      />
+                    </TableCell>
+                    <TableCell className={isEditable ? "border-r" : ""}>
+                      <Input
+                        value={row.details}
+                        onChange={(e) => {
+                          const updated = innovativeMethodologies.map((item) =>
+                            item.id === row.id ? { ...item, details: e.target.value } : item,
+                          )
+                          setInnovativeMethodologies(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0"
+                        placeholder="Details..."
+                      />
+                    </TableCell>
+                    {isEditable && (
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteMethodologyRow(row.id)}
+                          disabled={innovativeMethodologies.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {isEditable && (
+              <div className="p-2 border-t">
+                <Button variant="outline" size="sm" onClick={addMethodologyRow} className="text-green-600">
+                  <Plus className="mr-2 h-4 w-4" /> Add Methodology Row
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Section A total row */}
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="min-w-[800px]">
+              <TableBody>
+                <TableRow className="bg-gray-100 font-bold">
+                  <TableCell className="border-r text-right min-w-[350px]" colSpan={2}>
+                    Total
+                  </TableCell>
+                  <TableCell className="border-r w-[100px] text-center">100</TableCell>
+                  <TableCell className="border-r w-[120px] text-center">
+                    {academicSectionTotal.toFixed(1)}
+                  </TableCell>
+                  <TableCell className="w-[120px]"></TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+
         </CardContent>
+
+{/* A2 ODD SEMESTER */}
+
+<CardContent className="space-y-4">
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="min-w-[800px]">
+              <TableHeader>
+                <TableRow className="bg-gray-100">
+                  <TableHead colSpan={5} className="text-center font-bold text-blue-700 border-b">
+                    A2. ODD SEMESTER 2024-25 (100 Points)
+                  </TableHead>
+                </TableRow>
+                <TableRow className="bg-gray-100">
+                  <TableHead colSpan={5} className="text-center font-bold text-black border-b">
+                    TEACHING WORKLOAD - SUBJECTS AND LABS
+                  </TableHead>
+                </TableRow>
+                <TableRow>
+                  <TableHead className="border-r w-[50px] whitespace-nowrap">No.</TableHead>
+                  <TableHead className="border-r min-w-[300px]">Component</TableHead>
+                  <TableHead className="border-r w-[100px] text-center whitespace-nowrap">Max. Points</TableHead>
+                  <TableHead className="border-r w-[120px] text-center whitespace-nowrap">Points Earned</TableHead>
+                  <TableHead className="w-[120px] text-center whitespace-nowrap">Points by HOD</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+  {/* DYNAMIC SUBJECTS */}
+{subjects.map((subject, index) => {
+  const taken = Number(formData[`${subject.id}_taken`] || 0)
+  const allotted = Number(formData[`${subject.id}_allotted`] || 0)
+
+  // Auto calculate score
+  const calculatedScore =
+    allotted > 0 ? ((taken / allotted) * 10).toFixed(1) : ""
+
+  // Sync into formData (non-editable)
+  if (formData[`${subject.id}_teaching_score`] !== calculatedScore) {
+    setFormData((prev) => ({
+      ...prev,
+      [`${subject.id}_teaching_score`]: calculatedScore,
+    }))
+  }
+
+  return (
+    <>
+      <TableRow key={`${subject.id}-header`} className="bg-gray-50/50">
+        {/* No. column */}
+        <TableCell className="border-r font-medium align-top pt-3">
+          {index + 1}.
+        </TableCell>
+
+        {/* Component column */}
+        <TableCell className="border-r font-bold">
+          <div className="flex items-center justify-between gap-2">
+            <span>SUBJECT {index + 1}:</span>
+
+            {/* Subject Name Input */}
+            <Input
+              className="h-7 w-56"
+              placeholder="Enter subject name"
+              value={formData[`${subject.id}_name`] || ""}
+              onChange={(e) =>
+                handleInputChange(`${subject.id}_name`, e.target.value)
+              }
+            />
+
+            {/* Remove button */}
+            {subjects.length > 1 && isEditable && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                onClick={() => removeSubject(subject.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </TableCell>
+
+        <TableCell className="border-r" />
+        <TableCell className="border-r" />
+        <TableCell />
+      </TableRow>
+
+      {/* a) Classes Taken */}
+      <TableRow key={`${subject.id}-classes`}>
+        <TableCell className="border-r" />
+        <TableCell className="border-r">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">a)</span>
+            <span>Classes Taken:</span>
+            <Input
+              className="h-7 w-20 inline-block"
+              value={formData[`${subject.id}_taken`] || ""}
+              onChange={(e) =>
+                handleInputChange(`${subject.id}_taken`, e.target.value)
+              }
+            />
+            <span>Hrs.</span>
+          </div>
+        </TableCell>
+        <TableCell className="border-r text-center">10</TableCell>
+
+        {/* Auto calculated, non-editable */}
+        <TableCell className="border-r">
+          <Input
+            className="h-8 w-full text-center bg-gray-100 text-gray-700 font-semibold"
+            value={calculatedScore}
+            disabled
+          />
+        </TableCell>
+
+        <TableCell>{renderHodInput()}</TableCell>
+      </TableRow>
+
+      {/* b) Allotted */}
+      <TableRow key={`${subject.id}-allotted`}>
+        <TableCell className="border-r" />
+        <TableCell className="border-r">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">b)</span>
+            <span>Allotted (N*):</span>
+            <Input
+              className="h-7 w-20 inline-block"
+              value={formData[`${subject.id}_allotted`] || ""}
+              onChange={(e) =>
+                handleInputChange(`${subject.id}_allotted`, e.target.value)
+              }
+            />
+            <span>Hrs.</span>
+          </div>
+        </TableCell>
+        <TableCell className="border-r" />
+        <TableCell className="border-r" />
+        <TableCell />
+      </TableRow>
+
+      {/* Formula */}
+      <TableRow key={`${subject.id}-formula`}>
+        <TableCell className="border-r" />
+        <TableCell className="border-r">
+          <span className="text-xs text-muted-foreground italic ml-6">
+            [Points = (No. of classes taken / N*) × 10]
+          </span>
+        </TableCell>
+        <TableCell className="border-r" />
+        <TableCell className="border-r" />
+        <TableCell />
+      </TableRow>
+
+      {/* % Results */}
+      <TableRow key={`${subject.id}-results`}>
+        <TableCell className="border-r" />
+        <TableCell className="border-r">
+          % Results [Points = %Pass × 0.05]
+        </TableCell>
+        <TableCell className="border-r text-center">5</TableCell>
+        <TableCell className="border-r">
+          {renderScoreInput(`${subject.id}_results_score`)}
+        </TableCell>
+        <TableCell>{renderHodInput()}</TableCell>
+      </TableRow>
+
+      {/* Student Feedback */}
+      <TableRow key={`${subject.id}-feedback`}>
+        <TableCell className="border-r" />
+        <TableCell className="border-r">
+          Student Feedback [Points = (% Feedback Score - 50) × 0.2]
+        </TableCell>
+        <TableCell className="border-r text-center">10</TableCell>
+        <TableCell className="border-r">
+          {renderScoreInput(`${subject.id}_feedback_score`)}
+        </TableCell>
+        <TableCell>{renderHodInput()}</TableCell>
+      </TableRow>
+    </>
+  )
+})}
+
+{/* Add Subject Button Row */}
+<TableRow>
+  <TableCell colSpan={5} className="p-2">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={addSubject}
+      className="w-full border-dashed bg-blue-100 text-blue-700 hover:bg-blue-200"
+    >
+      <Plus className="mr-2 h-4 w-4" /> Add Subject
+    </Button>
+  </TableCell>
+</TableRow>
+
+                {/* OTHER ITEMS (Renumbered dynamically) */}
+                <TableRow>
+                  <TableCell className="border-r font-medium">{subjects.length + 1}.</TableCell>
+                  <TableCell className="border-r">
+                    Academic Record Keeping (OBE/NBA/NAAC/VTU/LIC Etc.)
+                  </TableCell>
+                  <TableCell className="border-r text-center">5</TableCell>
+                  <TableCell className="border-r">
+                    {renderScoreInput("academic_record_score")}
+                  </TableCell>
+                  <TableCell>{renderHodInput()}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="border-r font-medium">{subjects.length + 2}.</TableCell>
+                  <TableCell className="border-r">
+                    Laboratory Established/Lab. Instruction Manuals developed/Introducing Design based Experiments
+                    {/* (Case Studies/Data Collections/Analysis for MBA) */}
+                  </TableCell>
+                  <TableCell className="border-r text-center">10</TableCell>
+                  <TableCell className="border-r">
+                    {renderScoreInput("lab_established_score")}
+                  </TableCell>
+                  <TableCell>{renderHodInput()}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="border-r font-medium">{subjects.length + 3}.</TableCell>
+                  <TableCell className="border-r">
+                    Innovative Assignments given to Students (Mention below)
+                  </TableCell>
+                  <TableCell className="border-r text-center">10</TableCell>
+                  <TableCell className="border-r">
+                    {renderScoreInput("innovative_assign_score")}
+                  </TableCell>
+                  <TableCell>{renderHodInput()}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Innovative Assignments Table */}
+          <div className="rounded-md border bg-blue-50/30 overflow-x-auto">
+            <Table className="min-w-[700px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="border-r w-[60px]">Sl. No.</TableHead>
+                  <TableHead className="border-r min-w-[200px]">Innovative Idea</TableHead>
+                  <TableHead className="border-r w-[150px]">No of Assignments</TableHead>
+                  <TableHead className={isEditable ? "border-r min-w-[200px]" : "min-w-[200px]"}>
+                    Details
+                  </TableHead>
+                  {isEditable && <TableHead className="w-[50px]">Actions</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {innovativeAssignments.map((row, idx) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="border-r text-center">{idx + 1}.</TableCell>
+                    <TableCell className="border-r">
+                      <Input
+                        value={row.idea}
+                        onChange={(e) => {
+                          const updated = innovativeAssignments.map((item) =>
+                            item.id === row.id ? { ...item, idea: e.target.value } : item,
+                          )
+                          setInnovativeAssignments(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0"
+                        placeholder="Enter idea..."
+                      />
+                    </TableCell>
+                    <TableCell className="border-r">
+                      <Input
+                        value={row.assignments}
+                        onChange={(e) => {
+                          const updated = innovativeAssignments.map((item) =>
+                            item.id === row.id ? { ...item, assignments: e.target.value } : item,
+                          )
+                          setInnovativeAssignments(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0 text-center"
+                      />
+                    </TableCell>
+                    <TableCell className={isEditable ? "border-r" : ""}>
+                      <Input
+                        value={row.details}
+                        onChange={(e) => {
+                          const updated = innovativeAssignments.map((item) =>
+                            item.id === row.id ? { ...item, details: e.target.value } : item,
+                          )
+                          setInnovativeAssignments(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0"
+                        placeholder="Details..."
+                      />
+                    </TableCell>
+                    {isEditable && (
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteAssignmentRow(row.id)}
+                          disabled={innovativeAssignments.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {isEditable && (
+              <div className="p-2 border-t">
+                <Button variant="outline" size="sm" onClick={addAssignmentRow} className="text-blue-600">
+                  <Plus className="mr-2 h-4 w-4" /> Add Assignment Row
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Innovative Teaching Methodologies header row (with score) */}
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="min-w-[800px]">
+              <TableBody>
+                <TableRow>
+                  <TableCell className="border-r font-medium w-[50px]">{subjects.length + 4}.</TableCell>
+                  <TableCell className="border-r min-w-[300px]">
+                    Innovative Teaching Methodologies incorporated (Mention below)
+                  </TableCell>
+                  <TableCell className="border-r w-[100px] text-center">5</TableCell>
+                  <TableCell className="border-r w-[120px]">
+                    {renderScoreInput("innovative_method_score")}
+                  </TableCell>
+                  <TableCell className="w-[120px]">
+                    {renderHodInput()}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Innovative Teaching Methodologies Table */}
+          <div className="rounded-md border bg-green-50/30 overflow-x-auto">
+            <Table className="min-w-[700px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="border-r w-[60px]">Sl. No.</TableHead>
+                  <TableHead className="border-r min-w-[200px]">Innovative Methodology</TableHead>
+                  <TableHead className="border-r w-[150px]">Tools</TableHead>
+                  <TableHead className={isEditable ? "border-r min-w-[200px]" : "min-w-[200px]"}>
+                    Details
+                  </TableHead>
+                  {isEditable && <TableHead className="w-[50px]">Actions</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {innovativeMethodologies.map((row, idx) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="border-r text-center">{idx + 1}.</TableCell>
+                    <TableCell className="border-r">
+                      <Input
+                        value={row.methodology}
+                        onChange={(e) => {
+                          const updated = innovativeMethodologies.map((item) =>
+                            item.id === row.id ? { ...item, methodology: e.target.value } : item,
+                          )
+                          setInnovativeMethodologies(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0"
+                        placeholder="Methodology..."
+                      />
+                    </TableCell>
+                    <TableCell className="border-r">
+                      <Input
+                        value={row.tools}
+                        onChange={(e) => {
+                          const updated = innovativeMethodologies.map((item) =>
+                            item.id === row.id ? { ...item, tools: e.target.value } : item,
+                          )
+                          setInnovativeMethodologies(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0"
+                        placeholder="Tools used..."
+                      />
+                    </TableCell>
+                    <TableCell className={isEditable ? "border-r" : ""}>
+                      <Input
+                        value={row.details}
+                        onChange={(e) => {
+                          const updated = innovativeMethodologies.map((item) =>
+                            item.id === row.id ? { ...item, details: e.target.value } : item,
+                          )
+                          setInnovativeMethodologies(updated)
+                        }}
+                        className="h-8 border-0 bg-transparent focus-visible:ring-0"
+                        placeholder="Details..."
+                      />
+                    </TableCell>
+                    {isEditable && (
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteMethodologyRow(row.id)}
+                          disabled={innovativeMethodologies.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {isEditable && (
+              <div className="p-2 border-t">
+                <Button variant="outline" size="sm" onClick={addMethodologyRow} className="text-green-600">
+                  <Plus className="mr-2 h-4 w-4" /> Add Methodology Row
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Section A total row */}
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="min-w-[800px]">
+              <TableBody>
+                <TableRow className="bg-gray-100 font-bold">
+                  <TableCell className="border-r text-right min-w-[350px]" colSpan={2}>
+                    Total
+                  </TableCell>
+                  <TableCell className="border-r w-[100px] text-center">100</TableCell>
+                  <TableCell className="border-r w-[120px] text-center">
+                    {academicSectionTotal.toFixed(1)}
+                  </TableCell>
+                  <TableCell className="w-[120px]"></TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+
+        </CardContent>
+
+
       </Card>
 
-      {/* SECTION B: RESEARCH, PUBLICATIONS, PROFESSIONAL DEVELOPMENT */}
+      {/* SECTION B: Research & Development, Publications, Professional Development */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">
@@ -738,15 +1349,14 @@ export default function PartBForm() {
                         <Textarea
                           value={row.component}
                           onChange={(e) => updateRow(research, setResearch, row.id, "component", e.target.value)}
-                          className="text-xs min-h-8"
+                          className="text-s "
                         />
                       </td>
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          //onChange={(e) => updateRow(research, setResearch, row.id, "maxPoints", e.target.value)}
                           className="h-8 text-center text-xs"
-                          disabled={true}
+                          disabled
                         />
                       </td>
                       <td className="border px-2 py-2 text-center">
@@ -767,7 +1377,7 @@ export default function PartBForm() {
                     </td>
                     <td className="border px-2 py-2 text-center">110</td>
                     <td className="border px-2 py-2 text-center">
-                      {research.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0).toFixed(1)}
+                      {researchTotal.toFixed(1)}
                     </td>
                     <td></td>
                   </tr>
@@ -800,13 +1410,13 @@ export default function PartBForm() {
                           onChange={(e) =>
                             updateRow(publications, setPublications, row.id, "component", e.target.value)
                           }
-                          className="text-xs min-h-8"
+                          className="text-s "
                         />
                       </td>
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          disabled={true}
+                          disabled
                           className="h-8 text-center text-xs"
                         />
                       </td>
@@ -830,9 +1440,7 @@ export default function PartBForm() {
                     </td>
                     <td className="border px-2 py-2 text-center">60</td>
                     <td className="border px-2 py-2 text-center">
-                      {publications
-                        .reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
-                        .toFixed(1)}
+                      {publicationsTotal.toFixed(1)}
                     </td>
                     <td></td>
                   </tr>
@@ -865,13 +1473,13 @@ export default function PartBForm() {
                           onChange={(e) =>
                             updateRow(professional, setProfessional, row.id, "component", e.target.value)
                           }
-                          className="text-xs min-h-8"
+                          className="text-s"
                         />
                       </td>
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          disabled={true}
+                          disabled
                           className="h-8 text-center text-xs"
                         />
                       </td>
@@ -895,9 +1503,7 @@ export default function PartBForm() {
                     </td>
                     <td className="border px-2 py-2 text-center">30</td>
                     <td className="border px-2 py-2 text-center">
-                      {professional
-                        .reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
-                        .toFixed(1)}
+                      {professionalTotal.toFixed(1)}
                     </td>
                     <td></td>
                   </tr>
@@ -908,7 +1514,7 @@ export default function PartBForm() {
         </CardContent>
       </Card>
 
-      {/* SECTION C: DEPARTMENTAL AND INSTITUTIONAL ACTIVITIES */}
+      {/* SECTION C: Departmental and Institutional Activities */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">SECTION C: Departmental and Institutional Activities (100 Points)</CardTitle>
@@ -938,13 +1544,13 @@ export default function PartBForm() {
                           onChange={(e) =>
                             updateRow(departmental, setDepartmental, row.id, "component", e.target.value)
                           }
-                          className="text-xs min-h-8"
+                          className="text-s"
                         />
                       </td>
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          disabled={true}
+                          disabled
                           className="h-8 text-center text-xs"
                         />
                       </td>
@@ -968,9 +1574,7 @@ export default function PartBForm() {
                     </td>
                     <td className="border px-2 py-2 text-center">70</td>
                     <td className="border px-2 py-2 text-center">
-                      {departmental
-                        .reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
-                        .toFixed(1)}
+                      {departmentalTotal.toFixed(1)}
                     </td>
                     <td></td>
                   </tr>
@@ -1003,20 +1607,20 @@ export default function PartBForm() {
                           onChange={(e) =>
                             updateRow(institutional, setInstitutional, row.id, "component", e.target.value)
                           }
-                          className="text-xs min-h-8"
+                          className="text-s"
                         />
                       </td>
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.maxPoints}
-                          disabled={true}
+                          disabled
                           className="h-8 text-center text-xs"
                         />
                       </td>
                       <td className="border px-2 py-2 text-center">
                         <Input
                           value={row.pointsEarned}
-                          disabled={true}
+                          disabled
                           className="h-8 text-center text-xs"
                         />
                       </td>
@@ -1031,9 +1635,7 @@ export default function PartBForm() {
                     </td>
                     <td className="border px-2 py-2 text-center">30</td>
                     <td className="border px-2 py-2 text-center">
-                      {institutional
-                        .reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
-                        .toFixed(1)}
+                      {institutionalTotal.toFixed(1)}
                     </td>
                     <td></td>
                   </tr>
@@ -1068,10 +1670,7 @@ export default function PartBForm() {
                   <td className="border px-2 py-2 text-center font-bold">200</td>
                   <td className="border px-2 py-2 text-center">120</td>
                   <td className="border px-2 py-2 text-center">
-                    {(
-                      academicEven.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0) +
-                      academicOdd.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
-                    ).toFixed(1)}
+                    {academicSectionTotal.toFixed(1)}
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50">
@@ -1080,11 +1679,7 @@ export default function PartBForm() {
                   <td className="border px-2 py-2 text-center font-bold">200</td>
                   <td className="border px-2 py-2 text-center">70</td>
                   <td className="border px-2 py-2 text-center">
-                    {(
-                      research.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0) +
-                      publications.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0) +
-                      professional.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
-                    ).toFixed(1)}
+                    {(sectionBTotal).toFixed(1)}
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50">
@@ -1093,10 +1688,7 @@ export default function PartBForm() {
                   <td className="border px-2 py-2 text-center font-bold">100</td>
                   <td className="border px-2 py-2 text-center">60</td>
                   <td className="border px-2 py-2 text-center">
-                    {(
-                      departmental.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0) +
-                      institutional.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
-                    ).toFixed(1)}
+                    {(sectionCTotal).toFixed(1)}
                   </td>
                 </tr>
                 <tr className="bg-blue-100 font-bold">
@@ -1106,15 +1698,7 @@ export default function PartBForm() {
                   <td className="border px-2 py-2 text-center">500</td>
                   <td className="border px-2 py-2 text-center">250</td>
                   <td className="border px-2 py-2 text-center text-blue-700">
-                    {(
-                      academicEven.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0) +
-                      academicOdd.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0) +
-                      research.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0) +
-                      publications.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0) +
-                      professional.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0) +
-                      departmental.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0) +
-                      institutional.reduce((sum, row) => sum + (Number.parseFloat(row.pointsEarned) || 0), 0)
-                    ).toFixed(1)}
+                    {grandTotal.toFixed(1)}
                   </td>
                 </tr>
               </tbody>
