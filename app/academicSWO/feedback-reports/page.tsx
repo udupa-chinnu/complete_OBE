@@ -7,15 +7,39 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/admin/tab
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/admin/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/admin/select"
 import { Input } from "@/components/admin/input"
-import { Label } from "@/components/admin/label"
-import { Textarea } from "@/components/admin/textarea"
-import { Switch } from "@/components/admin/switch"
-import { BarChart, FileDown, FileText, Search, Edit, Trash2, Eye } from "lucide-react"
+import { Search, Eye, FileDown } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/admin/dialog"
-import { Badge } from "@/components/admin/badge"
+import { Label } from "@/components/admin/label"
 
-// Sample data for faculty feedback reports
-const initialFacultyReports = [
+// --- Types ---
+type FacultyReport = {
+  id: number
+  faculty: string
+  department: string
+  subject: string
+  semester: string
+  responseCount: number
+  isActive: boolean
+}
+
+type InstitutionReport = {
+  id: number
+  title: string
+  semester: string
+  responseCount: number
+  isActive: boolean
+}
+
+type GraduateExitReport = {
+  id: number
+  title: string
+  batch: string
+  responseCount: number
+  isActive: boolean
+}
+
+// --- Initial Data ---
+const initialFacultyReports: FacultyReport[] = [
   {
     id: 1,
     faculty: "Dr. Sharma",
@@ -23,8 +47,7 @@ const initialFacultyReports = [
     subject: "Data Structures",
     semester: "Odd Semester 2023-24",
     responseCount: 45,
-    averageRating: 4.5,
-    status: "Completed",
+    isActive: true,
   },
   {
     id: 2,
@@ -33,30 +56,41 @@ const initialFacultyReports = [
     subject: "Database Management",
     semester: "Odd Semester 2023-24",
     responseCount: 42,
-    averageRating: 4.2,
-    status: "Completed",
+    isActive: false,
   },
 ]
 
-// Sample data for institution feedback reports
-const initialInstitutionReports = [
+const initialInstitutionReports: InstitutionReport[] = [
   {
     id: 1,
     title: "Institution Infrastructure Feedback - 2023",
-    targetAudience: "Students",
     semester: "Odd Semester 2023-24",
     responseCount: 320,
-    averageRating: 4.1,
-    status: "Completed",
+    isActive: true,
   },
   {
     id: 2,
     title: "Administrative Services Feedback - 2023",
-    targetAudience: "Students & Faculty",
     semester: "Odd Semester 2023-24",
     responseCount: 180,
-    averageRating: 3.8,
-    status: "Completed",
+    isActive: false,
+  },
+]
+
+const initialGraduateExitReports: GraduateExitReport[] = [
+  {
+    id: 1,
+    title: "Graduate Exit Survey - 2024",
+    batch: "2020-2024",
+    responseCount: 150,
+    isActive: true,
+  },
+  {
+    id: 2,
+    title: "Graduate Exit Survey - 2023",
+    batch: "2019-2023",
+    responseCount: 145,
+    isActive: false,
   },
 ]
 
@@ -66,16 +100,15 @@ export default function FeedbackReportsPage() {
   const [selectedDepartment, setSelectedDepartment] = useState("")
   const [selectedSemester, setSelectedSemester] = useState("")
   
-  const [facultyReports, setFacultyReports] = useState(initialFacultyReports)
-  const [institutionReports, setInstitutionReports] = useState(initialInstitutionReports)
+  // Data States
+  const [facultyReports] = useState(initialFacultyReports)
+  const [institutionReports] = useState(initialInstitutionReports)
+  const [graduateExitReports] = useState(initialGraduateExitReports)
 
   // Dialog States
   const [viewReport, setViewReport] = useState<any | null>(null)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editData, setEditData] = useState<any | null>(null)
-  const [deleteId, setDeleteId] = useState<{id: number, type: 'faculty' | 'institution'} | null>(null)
 
-  // Filter faculty reports based on search and filters
+  // Filter faculty reports
   const filteredFacultyReports = facultyReports.filter((report) => {
     const matchesSearch =
       report.faculty.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -85,42 +118,22 @@ export default function FeedbackReportsPage() {
     return matchesSearch && matchesDepartment && matchesSemester
   })
 
-  // Filter institution reports based on search and filters
+  // Filter institution reports
   const filteredInstitutionReports = institutionReports.filter((report) => {
     const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesSemester = selectedSemester === "" || selectedSemester === "all" || report.semester === selectedSemester
     return matchesSearch && matchesSemester
   })
 
+  // Filter graduate exit reports
+  const filteredGraduateExitReports = graduateExitReports.filter((report) => {
+    const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesSearch
+  })
+
   // Handlers
   const handleView = (report: any) => {
     setViewReport(report)
-  }
-
-  const handleEdit = (report: any) => {
-    setEditData({...report})
-    setIsEditing(true)
-  }
-
-  const handleUpdate = () => {
-    if (activeTab === 'faculty') {
-      setFacultyReports(prev => prev.map(r => r.id === editData.id ? editData : r))
-    } else {
-      setInstitutionReports(prev => prev.map(r => r.id === editData.id ? editData : r))
-    }
-    setIsEditing(false)
-    setEditData(null)
-  }
-
-  const handleDelete = () => {
-    if (deleteId) {
-      if (deleteId.type === 'faculty') {
-        setFacultyReports(prev => prev.filter(r => r.id !== deleteId.id))
-      } else {
-        setInstitutionReports(prev => prev.filter(r => r.id !== deleteId.id))
-      }
-      setDeleteId(null)
-    }
   }
 
   return (
@@ -134,9 +147,10 @@ export default function FeedbackReportsPage() {
 
       <Tabs defaultValue="faculty" value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
         <div className="w-full">
-          <TabsList className="grid w-full md:w-[400px] grid-cols-2">
+          <TabsList className="grid w-full md:w-[600px] grid-cols-3">
             <TabsTrigger value="faculty">Faculty Feedback</TabsTrigger>
             <TabsTrigger value="institution">Institution Feedback</TabsTrigger>
+            <TabsTrigger value="graduate-exit">Graduate Exit Survey</TabsTrigger>
           </TabsList>
         </div>
 
@@ -189,15 +203,13 @@ export default function FeedbackReportsPage() {
                       <TableHead>Subject</TableHead>
                       <TableHead>Department</TableHead>
                       <TableHead>Responses</TableHead>
-                      <TableHead>Avg. Rating</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredFacultyReports.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
                           No reports found.
                         </TableCell>
                       </TableRow>
@@ -208,30 +220,10 @@ export default function FeedbackReportsPage() {
                           <TableCell>{report.subject}</TableCell>
                           <TableCell>{report.department}</TableCell>
                           <TableCell>{report.responseCount}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <span className="font-medium">{report.averageRating}</span>
-                              <span className="text-xs text-muted-foreground">/5</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={report.status === "Completed" ? "default" : "secondary"}
-                              className={report.status === "Completed" ? "bg-green-100 text-green-800 hover:bg-green-100" : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"}
-                            >
-                              {report.status}
-                            </Badge>
-                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" title="View" onClick={() => handleView(report)}>
+                              <Button variant="ghost" size="icon" title="View Details" onClick={() => handleView(report)}>
                                 <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" title="Edit" onClick={() => handleEdit(report)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" title="Delete" onClick={() => setDeleteId({id: report.id, type: 'faculty'})}>
-                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -279,18 +271,15 @@ export default function FeedbackReportsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Title</TableHead>
-                      <TableHead>Target Audience</TableHead>
                       <TableHead>Semester</TableHead>
                       <TableHead>Responses</TableHead>
-                      <TableHead>Avg. Rating</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredInstitutionReports.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
                           No reports found.
                         </TableCell>
                       </TableRow>
@@ -298,33 +287,12 @@ export default function FeedbackReportsPage() {
                       filteredInstitutionReports.map((report) => (
                         <TableRow key={report.id}>
                           <TableCell className="font-medium">{report.title}</TableCell>
-                          <TableCell>{report.targetAudience}</TableCell>
                           <TableCell>{report.semester}</TableCell>
                           <TableCell>{report.responseCount}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <span className="font-medium">{report.averageRating}</span>
-                              <span className="text-xs text-muted-foreground">/5</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={report.status === "Completed" ? "default" : "secondary"}
-                              className={report.status === "Completed" ? "bg-green-100 text-green-800 hover:bg-green-100" : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"}
-                            >
-                              {report.status}
-                            </Badge>
-                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" title="View" onClick={() => handleView(report)}>
+                              <Button variant="ghost" size="icon" title="View Report" onClick={() => handleView(report)}>
                                 <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" title="Edit" onClick={() => handleEdit(report)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" title="Delete" onClick={() => setDeleteId({id: report.id, type: 'institution'})}>
-                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -337,6 +305,66 @@ export default function FeedbackReportsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Graduate Exit Survey Reports Tab */}
+        <TabsContent value="graduate-exit" className="w-full mt-0">
+          <Card className="w-full border shadow-sm">
+            <CardHeader>
+              <CardTitle>Graduate Exit Survey Reports</CardTitle>
+              <CardDescription>Analyze feedback from graduating students</CardDescription>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by title..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Batch</TableHead>
+                      <TableHead>Responses</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredGraduateExitReports.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                          No reports found.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredGraduateExitReports.map((report) => (
+                        <TableRow key={report.id}>
+                          <TableCell className="font-medium">{report.title}</TableCell>
+                          <TableCell>{report.batch}</TableCell>
+                          <TableCell>{report.responseCount}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="icon" title="View Report" onClick={() => handleView(report)}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
 
       {/* View Dialog */}
@@ -347,10 +375,6 @@ export default function FeedbackReportsPage() {
             <DialogDescription>Detailed view of the selected report.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right font-bold">Status:</Label>
-              <Badge variant="outline" className="w-fit col-span-3">{viewReport?.status}</Badge>
-            </div>
             {viewReport?.subject && (
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right font-bold">Subject:</Label>
@@ -363,98 +387,26 @@ export default function FeedbackReportsPage() {
                 <span className="col-span-3">{viewReport.department}</span>
               </div>
             )}
-             <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right font-bold">Semester:</Label>
-                <span className="col-span-3">{viewReport?.semester}</span>
-              </div>
+            {viewReport?.semester && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right font-bold">Semester:</Label>
+                    <span className="col-span-3">{viewReport.semester}</span>
+                </div>
+            )}
+            {viewReport?.batch && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right font-bold">Batch:</Label>
+                    <span className="col-span-3">{viewReport.batch}</span>
+                </div>
+            )}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right font-bold">Responses:</Label>
               <span className="col-span-3">{viewReport?.responseCount}</span>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right font-bold">Rating:</Label>
-              <span className="col-span-3 font-semibold text-lg">{viewReport?.averageRating} / 5</span>
-            </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex justify-between sm:justify-between">
              <Button variant="outline" onClick={() => setViewReport(null)}>Close</Button>
-             {/* <Button variant="default"><FileDown className="w-4 h-4 mr-2"/> Download PDF</Button> */}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditing} onOpenChange={(open) => !open && setIsEditing(false)}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Report</DialogTitle>
-            <DialogDescription>Update the details for this report.</DialogDescription>
-          </DialogHeader>
-          {editData && (
-            <div className="grid gap-4 py-4">
-               {editData.faculty && (
-                   <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="faculty" className="text-right">Faculty</Label>
-                      <Input id="faculty" value={editData.faculty} onChange={(e) => setEditData({...editData, faculty: e.target.value})} className="col-span-3" />
-                   </div>
-               )}
-               {editData.title && (
-                   <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="title" className="text-right">Title</Label>
-                      <Input id="title" value={editData.title} onChange={(e) => setEditData({...editData, title: e.target.value})} className="col-span-3" />
-                   </div>
-               )}
-                {editData.subject && (
-                   <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="subject" className="text-right">Subject</Label>
-                      <Input id="subject" value={editData.subject} onChange={(e) => setEditData({...editData, subject: e.target.value})} className="col-span-3" />
-                   </div>
-               )}
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="semester" className="text-right">Semester</Label>
-                    <Select value={editData.semester} onValueChange={(value) => setEditData({...editData, semester: value})}>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select semester" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Odd Semester 2023-24">Odd Semester 2023-24</SelectItem>
-                        <SelectItem value="Even Semester 2023-24">Even Semester 2023-24</SelectItem>
-                      </SelectContent>
-                    </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="status" className="text-right">Status</Label>
-                    <Select value={editData.status} onValueChange={(value) => setEditData({...editData, status: value})}>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        <SelectItem value="In Progress">In Progress</SelectItem>
-                      </SelectContent>
-                    </Select>
-                </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
-            <Button onClick={handleUpdate}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Delete Report</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this report? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+             <Button variant="default"><FileDown className="w-4 h-4 mr-2"/> Download PDF</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

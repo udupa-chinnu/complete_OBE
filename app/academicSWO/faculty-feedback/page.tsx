@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/admin/select"
 import { Textarea } from "@/components/admin/textarea"
 import { Switch } from "@/components/admin/switch"
-import { PlusCircle, Edit, Trash2, Eye } from "lucide-react"
+import { PlusCircle, Edit, Power, Eye, Trash2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/admin/dialog"
 import { Badge } from "@/components/admin/badge"
 
@@ -18,7 +18,7 @@ import { Badge } from "@/components/admin/badge"
 type Question = {
   id: number
   text: string
-  type: string
+  type: string // Kept for data consistency, but fixed to 'rating' in UI
 }
 
 type FeedbackForm = {
@@ -26,7 +26,7 @@ type FeedbackForm = {
   title: string
   department: string
   semester: string
-  status: "Active" | "Draft"
+  status: "Active" | "Inactive" // Changed from 'Draft'
   createdAt: string
   description: string
   questions: Question[]
@@ -52,7 +52,7 @@ const initialForms: FeedbackForm[] = [
     title: "Lab Instruction Evaluation - 2023",
     department: "Information Science & Engineering",
     semester: "Odd Semester 2023-24",
-    status: "Draft",
+    status: "Inactive", // Changed from 'Draft'
     createdAt: "2023-08-20",
     description: "Feedback regarding laboratory sessions.",
     questions: [
@@ -71,13 +71,13 @@ export default function FacultyFeedbackPage() {
   const [formTitle, setFormTitle] = useState("")
   const [formDepartment, setFormDepartment] = useState("")
   const [formSemester, setFormSemester] = useState("")
-  const [formStatus, setFormStatus] = useState<boolean>(false) // false = Draft, true = Active
+  const [formStatus, setFormStatus] = useState<boolean>(false) // false = Inactive, true = Active
   const [formDescription, setFormDescription] = useState("")
   const [questions, setQuestions] = useState<Question[]>([{ id: 1, text: "", type: "rating" }])
 
   // Dialog States
   const [viewForm, setViewForm] = useState<FeedbackForm | null>(null)
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [toggleStatusForm, setToggleStatusForm] = useState<FeedbackForm | null>(null)
 
   // --- Form Handlers ---
 
@@ -117,12 +117,21 @@ export default function FacultyFeedbackPage() {
       return
     }
 
+    // If creating/updating to 'Active', check if another form is already active
+    if (formStatus) {
+        const otherActive = forms.find(f => f.status === "Active" && f.id !== currentFormId)
+        if (otherActive) {
+             // Automatically deactivate others if new one is set to Active
+             setForms(prev => prev.map(f => ({...f, status: "Inactive"})))
+        }
+    }
+
     const formData: FeedbackForm = {
       id: isEditing && currentFormId ? currentFormId : Date.now(),
       title: formTitle,
       department: formDepartment,
       semester: formSemester,
-      status: formStatus ? "Active" : "Draft",
+      status: formStatus ? "Active" : "Inactive",
       createdAt: isEditing 
         ? forms.find(f => f.id === currentFormId)?.createdAt || new Date().toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
@@ -131,9 +140,9 @@ export default function FacultyFeedbackPage() {
     }
 
     if (isEditing) {
-      setForms(forms.map(f => f.id === currentFormId ? formData : f))
+      setForms(prev => prev.map(f => f.id === currentFormId ? formData : f))
     } else {
-      setForms([...forms, formData])
+      setForms(prev => [...prev, formData])
     }
 
     resetForm()
@@ -155,12 +164,27 @@ export default function FacultyFeedbackPage() {
     setActiveTab("create")
   }
 
-  const handleDelete = () => {
-    if (deleteId) {
-      setForms(forms.filter(f => f.id !== deleteId))
-      setDeleteId(null)
+  const handleToggleStatus = () => {
+    if (toggleStatusForm) {
+      const newStatus = toggleStatusForm.status === "Active" ? "Inactive" : "Active"
+      
+      setForms(forms.map(f => {
+        if (f.id === toggleStatusForm.id) {
+          return { ...f, status: newStatus }
+        }
+        // If activating this form, deactivate all others
+        if (newStatus === "Active") {
+            return { ...f, status: "Inactive" }
+        }
+        return f
+      }))
+      setToggleStatusForm(null)
     }
   }
+
+  const isDeactivating = toggleStatusForm?.status === "Active";
+  const confirmActionLabel = isDeactivating ? "Deactivate" : "Activate";
+  const confirmActionVariant = isDeactivating ? "destructive" : "default";
 
   return (
     <div className="w-full p-4 md:p-6 space-y-6">
@@ -242,11 +266,11 @@ export default function FacultyFeedbackPage() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="text-red-500 hover:text-red-600" 
-                                title="Delete"
-                                onClick={() => setDeleteId(form.id)}
+                                className={form.status === "Active" ? "text-orange-500 hover:text-orange-600" : "text-green-600 hover:text-green-700"}
+                                title={form.status === "Active" ? "Deactivate" : "Activate"} 
+                                onClick={() => setToggleStatusForm(form)}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Power className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -365,33 +389,15 @@ export default function FacultyFeedbackPage() {
                           Remove
                         </Button>
                       </div>
-                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                        <div className="lg:col-span-3 space-y-2">
-                          <Label htmlFor={`question-${question.id}`}>Question Text</Label>
-                          <Input
-                            id={`question-${question.id}`}
-                            placeholder="Type your question here..."
-                            value={question.text}
-                            onChange={(e) => updateQuestion(question.id, "text", e.target.value)}
-                            className="w-full"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`type-${question.id}`}>Response Type</Label>
-                          <Select
-                            value={question.type}
-                            onValueChange={(value) => updateQuestion(question.id, "type", value)}
-                          >
-                            <SelectTrigger id={`type-${question.id}`} className="w-full">
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="rating">Rating Scale (1-5)</SelectItem>
-                              <SelectItem value="text">Text Response</SelectItem>
-                              <SelectItem value="mcq">Multiple Choice</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`question-${question.id}`}>Question Text</Label>
+                        <Input
+                          id={`question-${question.id}`}
+                          placeholder="Type your question here..."
+                          value={question.text}
+                          onChange={(e) => updateQuestion(question.id, "text", e.target.value)}
+                          className="w-full"
+                        />
                       </div>
                     </div>
                   ))}
@@ -440,7 +446,7 @@ export default function FacultyFeedbackPage() {
                 {viewForm?.questions.map((q, i) => (
                   <div key={q.id} className="p-3 text-sm flex justify-between items-start gap-4">
                     <span>{i + 1}. {q.text}</span>
-                    <Badge variant="secondary" className="text-xs whitespace-nowrap">{q.type}</Badge>
+                    {/* Removed explicit type badge since all are ratings now */}
                   </div>
                 ))}
               </div>
@@ -452,21 +458,27 @@ export default function FacultyFeedbackPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+      {/* Toggle Status Confirmation Dialog */}
+      <Dialog open={!!toggleStatusForm} onOpenChange={(open) => !open && setToggleStatusForm(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Delete Feedback Form</DialogTitle>
+            <DialogTitle>{confirmActionLabel} Feedback Form</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this form? This action cannot be undone.
+              Are you sure you want to {confirmActionLabel.toLowerCase()} this form?
+              {isDeactivating 
+                ? " Students will no longer be able to submit feedback." 
+                : " This will deactivate any other currently active form."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeleteId(null)}>
+            <Button variant="outline" onClick={() => setToggleStatusForm(null)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
+            <Button 
+              variant="default"
+              onClick={handleToggleStatus}
+            >
+              {confirmActionLabel}
             </Button>
           </DialogFooter>
         </DialogContent>

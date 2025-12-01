@@ -30,7 +30,7 @@ type FeedbackArea = {
 type FeedbackForm = {
   id: number
   title: string
-  semester: string
+  batch: string
   status: "Active" | "Inactive"
   createdAt: string
   description: string
@@ -38,27 +38,126 @@ type FeedbackForm = {
   questions: Question[]
 }
 
-// --- Initial Data ---
+// --- Default Areas & Questions from Images ---
+const DEFAULT_AREAS = [
+  { id: "personal", name: "Personal Details", isMandatory: true },
+  { id: "placement", name: "Placement Details", isMandatory: true },
+  { id: "learning_quality", name: "Quality of Instructions & Support", isMandatory: true },
+  { id: "facilities_academic", name: "Facilities Offered for Academics", isMandatory: true },
+  { id: "academic_services", name: "Academic Services", isMandatory: true },
+  { id: "general_facilities", name: "General Facilities", isMandatory: true },
+  { id: "graduation_feedback", name: "Graduation Feedback (Capabilities)", isMandatory: true },
+  { id: "subjective", name: "Subjective Feedback", isMandatory: true },
+  { id: "suggestions", name: "Suggestions & Recommendation", isMandatory: true },
+]
+
+
+const DEFAULT_QUESTIONS: Question[] = [
+  // PERSONAL (text fields, but stored as questions for CRUD)
+  { id: 1, text: "Name of the Graduating Student", areaId: "personal" },
+  { id: 2, text: "Date of Birth", areaId: "personal" },
+  { id: 3, text: "University Seat No", areaId: "personal" },
+  { id: 4, text: "Academic Batch", areaId: "personal" },
+  { id: 5, text: "Department", areaId: "personal" },
+  { id: 6, text: "Contact Number", areaId: "personal" },
+  { id: 7, text: "Email ID", areaId: "personal" },
+  { id: 8, text: "Father's Name", areaId: "personal" },
+  { id: 9, text: "Permanent Address", areaId: "personal" },
+
+  // PLACEMENT
+  { id: 10, text: "Mode of Placement (On Campus / Off Campus / Not Placed)", areaId: "placement" },
+  { id: 11, text: "Name of Company & Designation", areaId: "placement" },
+  { id: 12, text: "Career Preference (Core Engg / R&D / Public Sector / etc.)", areaId: "placement" },
+
+  // QUALITY OF INSTRUCTIONS (1–10)
+  { id: 20, text: "Basic Sciences (Maths, Physics, Chemistry)", areaId: "learning_quality" },
+  { id: 21, text: "Foundation Courses in Engineering", areaId: "learning_quality" },
+  { id: 22, text: "Applied & Specialized Engineering Courses", areaId: "learning_quality" },
+  { id: 23, text: "Computers (Programming, Software Usage)", areaId: "learning_quality" },
+  { id: 24, text: "Humanities & Management Courses", areaId: "learning_quality" },
+  { id: 25, text: "Languages (English & Kannada)", areaId: "learning_quality" },
+  { id: 26, text: "Additional Teaching Resources (Videos, PPTs)", areaId: "learning_quality" },
+  { id: 27, text: "Technical Staff Support", areaId: "learning_quality" },
+  { id: 28, text: "Mentoring by Faculty", areaId: "learning_quality" },
+  { id: 29, text: "Treatment by Principal, HoD & Staff Members", areaId: "learning_quality" },
+
+  // ACADEMIC FACILITIES
+  { id: 30, text: "Classrooms", areaId: "facilities_academic" },
+  { id: 31, text: "Multimedia Facilities", areaId: "facilities_academic" },
+  { id: 32, text: "Basic Sciences Lab", areaId: "facilities_academic" },
+  { id: 33, text: "Engineering Labs", areaId: "facilities_academic" },
+  { id: 34, text: "Internet / Wi-Fi", areaId: "facilities_academic" },
+  { id: 35, text: "Department Library", areaId: "facilities_academic" },
+  { id: 36, text: "Hands-On Laboratory", areaId: "facilities_academic" },
+  { id: 37, text: "Academic Projects / Seminars", areaId: "facilities_academic" },
+  { id: 38, text: "Industry Connect Laboratory", areaId: "facilities_academic" },
+  { id: 39, text: "Green Technology", areaId: "facilities_academic" },
+  { id: 40, text: "Social Innovation", areaId: "facilities_academic" },
+  { id: 41, text: "Connectivity with Premier Institutions", areaId: "facilities_academic" },
+  { id: 42, text: "Department Association", areaId: "facilities_academic" },
+
+  // ACADEMIC SERVICES
+  { id: 50, text: "Examination Cell", areaId: "academic_services" },
+  { id: 51, text: "Placement & Training Cell", areaId: "academic_services" },
+  { id: 52, text: "Library Services", areaId: "academic_services" },
+  { id: 53, text: "College Office", areaId: "academic_services" },
+  { id: 54, text: "Student Welfare Office", areaId: "academic_services" },
+  { id: 55, text: "Reprographics & Stationery", areaId: "academic_services" },
+
+  // GENERAL FACILITIES
+  { id: 60, text: "Sports & Gymnasium", areaId: "general_facilities" },
+  { id: 61, text: "Seminar Hall / Auditorium", areaId: "general_facilities" },
+  { id: 62, text: "Canteen / Food Court", areaId: "general_facilities" },
+  { id: 63, text: "Clubs for Personality Development", areaId: "general_facilities" },
+  { id: 64, text: "Healthcare / Counselling Center", areaId: "general_facilities" },
+  { id: 65, text: "Security & Safety", areaId: "general_facilities" },
+  { id: 66, text: "Transport", areaId: "general_facilities" },
+  { id: 67, text: "Hostel", areaId: "general_facilities" },
+  { id: 68, text: "Drinking Water / Hygiene", areaId: "general_facilities" },
+  { id: 69, text: "Parking Lot", areaId: "general_facilities" },
+
+  // GRADUATION FEEDBACK (Capabilities)
+  { id: 80, text: "Ability to gather information properly", areaId: "graduation_feedback" },
+  { id: 81, text: "Ability to interpret & present information", areaId: "graduation_feedback" },
+  { id: 82, text: "Ability to design feasible engineering solutions", areaId: "graduation_feedback" },
+  { id: 83, text: "Teamwork / Leadership readiness", areaId: "graduation_feedback" },
+  { id: 84, text: "Ability to communicate effectively", areaId: "graduation_feedback" },
+  { id: 85, text: "Professional ethics awareness", areaId: "graduation_feedback" },
+  { id: 86, text: "Ability to plan & manage projects", areaId: "graduation_feedback" },
+  { id: 87, text: "Readiness for independent learning", areaId: "graduation_feedback" },
+  { id: 88, text: "Placement confidence / career readiness", areaId: "graduation_feedback" },
+  { id: 89, text: "Ability to adapt to new technology", areaId: "graduation_feedback" },
+  { id: 90, text: "Satisfaction with academic program at Sahyadri", areaId: "graduation_feedback" },
+
+  // SUBJECTIVE FEEDBACK
+  { id: 100, text: "Strengths", areaId: "subjective" },
+  { id: 101, text: "Areas of Improvement", areaId: "subjective" },
+  { id: 102, text: "Important skills developed", areaId: "subjective" },
+  { id: 103, text: "Learning/Field experience valued the most", areaId: "subjective" },
+  { id: 104, text: "Anything that inspired you / changed your ideas about the world", areaId: "subjective" },
+
+  // SUGGESTIONS & RECOMMENDATIONS
+  { id: 110, text: "Any suggestions for improving the department", areaId: "suggestions" },
+  { id: 111, text: "Any suggestions for improving the institute", areaId: "suggestions" },
+  { id: 112, text: "Would you recommend Sahyadri to others? (Yes/No)", areaId: "suggestions" },
+  { id: 113, text: "Reason for your recommendation choice", areaId: "suggestions" },
+]
+
+
 const initialForms: FeedbackForm[] = [
   {
     id: 1,
-    title: "Institution Infrastructure Feedback - 2023",
-    semester: "Odd Semester 2023-24",
+    title: "Graduate Exit Survey - 2024",
+    batch: "2020-2024",
     status: "Active",
-    createdAt: "2023-08-10",
-    description: "Feedback regarding campus facilities.",
-    areas: [
-      { id: "a1", name: "Classrooms", isMandatory: true },
-      { id: "a2", name: "Hostel", isMandatory: false } 
-    ],
-    questions: [
-      { id: 1, text: "The classrooms are well-equipped.", areaId: "a1" },
-      { id: 2, text: "The hostel rooms are clean.", areaId: "a2" },
-    ],
+    createdAt: "2024-05-15",
+    description: "Survey for graduating students to assess program outcomes and facilities.",
+    areas: DEFAULT_AREAS,
+    questions: DEFAULT_QUESTIONS,
   },
 ]
 
-export default function InstitutionFeedbackPage() {
+export default function GraduateExitSurveyPage() {
   const [activeTab, setActiveTab] = useState("existing")
   const [forms, setForms] = useState<FeedbackForm[]>(initialForms)
 
@@ -67,13 +166,13 @@ export default function InstitutionFeedbackPage() {
   const [currentFormId, setCurrentFormId] = useState<number | null>(null)
   
   const [formTitle, setFormTitle] = useState("")
-  const [formSemester, setFormSemester] = useState("")
+  const [formBatch, setFormBatch] = useState("")
   const [formStatus, setFormStatus] = useState<boolean>(false)
   const [formDescription, setFormDescription] = useState("")
   
   // Dynamic Areas & Questions State
-  const [areas, setAreas] = useState<FeedbackArea[]>([{ id: "default", name: "General", isMandatory: true }])
-  const [questions, setQuestions] = useState<Question[]>([])
+  const [areas, setAreas] = useState<FeedbackArea[]>([...DEFAULT_AREAS])
+  const [questions, setQuestions] = useState<Question[]>([...DEFAULT_QUESTIONS])
   
   // New Area Inputs
   const [newAreaName, setNewAreaName] = useState("")
@@ -87,11 +186,11 @@ export default function InstitutionFeedbackPage() {
 
   const resetForm = () => {
     setFormTitle("")
-    setFormSemester("")
+    setFormBatch("")
     setFormStatus(false)
     setFormDescription("")
-    setAreas([{ id: "default", name: "General", isMandatory: true }]) 
-    setQuestions([])
+    setAreas([...DEFAULT_AREAS]) 
+    setQuestions([...DEFAULT_QUESTIONS])
     setIsEditing(false)
     setCurrentFormId(null)
     setNewAreaName("")
@@ -145,7 +244,7 @@ export default function InstitutionFeedbackPage() {
   // --- CRUD Operations ---
 
   const handleSave = () => {
-    if (!formTitle || !formSemester) {
+    if (!formTitle || !formBatch) {
       alert("Please fill in all required fields")
       return
     }
@@ -165,7 +264,7 @@ export default function InstitutionFeedbackPage() {
     const formData: FeedbackForm = {
       id: isEditing && currentFormId ? currentFormId : Date.now(),
       title: formTitle,
-      semester: formSemester,
+      batch: formBatch,
       status: newStatus,
       createdAt: isEditing 
         ? forms.find(f => f.id === currentFormId)?.createdAt || new Date().toISOString().split('T')[0]
@@ -176,21 +275,16 @@ export default function InstitutionFeedbackPage() {
     }
 
     if (isEditing) {
-      // If we just updated the list to deactivate others, map over that list
-      // otherwise map over original forms (but handleSave modifies forms so we use updatedForms logic)
-      // Actually, simpler logic:
-      if (formStatus) {
-         // Deactivate all others
+      // If updating status, ensure others are deactivated
+       if (formStatus) {
          setForms(prev => prev.map(f => {
              if (f.id === currentFormId) return formData;
              return { ...f, status: "Inactive" };
          }));
       } else {
-         // Just update current
          setForms(prev => prev.map(f => f.id === currentFormId ? formData : f));
       }
     } else {
-      // Creating new
        if (formStatus) {
          setForms(prev => [...prev.map(f => ({...f, status: "Inactive" as const})), formData]);
       } else {
@@ -204,7 +298,7 @@ export default function InstitutionFeedbackPage() {
 
   const handleEdit = (form: FeedbackForm) => {
     setFormTitle(form.title)
-    setFormSemester(form.semester)
+    setFormBatch(form.batch)
     setFormStatus(form.status === "Active")
     setFormDescription(form.description || "")
     setAreas(form.areas.map(a => ({...a})))
@@ -220,15 +314,12 @@ export default function InstitutionFeedbackPage() {
       const newStatus = toggleStatusForm.status === "Active" ? "Inactive" : "Active"
       
       setForms(forms.map(f => {
-        // If we are activating this form, deactivate all others
-        if (newStatus === "Active") {
-            if (f.id === toggleStatusForm.id) return { ...f, status: "Active" };
-            return { ...f, status: "Inactive" };
-        }
-        
-        // If deactivating, just change this one
         if (f.id === toggleStatusForm.id) {
-          return { ...f, status: "Inactive" }
+          return { ...f, status: newStatus }
+        }
+        // If activating this form, deactivate all others
+        if (newStatus === "Active") {
+            return { ...f, status: "Inactive" }
         }
         return f
       }))
@@ -244,16 +335,16 @@ export default function InstitutionFeedbackPage() {
     <div className="w-full p-4 md:p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Institution Feedback</h1>
-          <p className="text-muted-foreground">Create dynamic feedback forms with custom areas</p>
+          <h1 className="text-3xl font-bold tracking-tight">Graduate Exit Survey</h1>
+          <p className="text-muted-foreground">Manage exit surveys for graduating students</p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex flex-col space-y-6">
         <div className="w-full">
           <TabsList className="grid w-full md:w-[400px] grid-cols-2">
-            <TabsTrigger value="existing">Existing Forms</TabsTrigger>
-            <TabsTrigger value="create">{isEditing ? "Edit Form" : "Create New Form"}</TabsTrigger>
+            <TabsTrigger value="existing">Existing Surveys</TabsTrigger>
+            <TabsTrigger value="create">{isEditing ? "Edit Survey" : "Create New Survey"}</TabsTrigger>
           </TabsList>
         </div>
 
@@ -261,8 +352,8 @@ export default function InstitutionFeedbackPage() {
         <TabsContent value="existing" className="w-full mt-0">
           <Card className="w-full border shadow-sm">
             <CardHeader>
-              <CardTitle>Institution Feedback Forms</CardTitle>
-              <CardDescription>View and manage existing feedback forms</CardDescription>
+              <CardTitle>Graduate Exit Surveys</CardTitle>
+              <CardDescription>View and manage existing surveys</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="w-full overflow-x-auto">
@@ -270,7 +361,7 @@ export default function InstitutionFeedbackPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[40%] min-w-[250px]">Title</TableHead>
-                      <TableHead className="w-[20%] min-w-[150px]">Semester</TableHead>
+                      <TableHead className="w-[20%] min-w-[150px]">Batch</TableHead>
                       <TableHead className="w-[15%] min-w-[100px]">Status</TableHead>
                       <TableHead className="w-[10%] min-w-[100px]">Created</TableHead>
                       <TableHead className="w-[15%] text-right">Actions</TableHead>
@@ -280,14 +371,14 @@ export default function InstitutionFeedbackPage() {
                     {forms.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
-                          No feedback forms found.
+                          No surveys found.
                         </TableCell>
                       </TableRow>
                     ) : (
                       forms.map((form) => (
                         <TableRow key={form.id}>
                           <TableCell className="font-medium">{form.title}</TableCell>
-                          <TableCell>{form.semester}</TableCell>
+                          <TableCell>{form.batch}</TableCell>
                           <TableCell>
                             <Badge 
                               variant={form.status === "Active" ? "default" : "secondary"}
@@ -330,9 +421,9 @@ export default function InstitutionFeedbackPage() {
         <TabsContent value="create" className="w-full mt-0">
           <Card className="w-full border shadow-sm">
             <CardHeader>
-              <CardTitle>{isEditing ? "Edit Feedback Form" : "Create New Institution Feedback Form"}</CardTitle>
+              <CardTitle>{isEditing ? "Edit Survey" : "Create New Survey"}</CardTitle>
               <CardDescription>
-                Design a feedback form by creating areas (e.g., Canteen, Library) and adding specific questions to them.
+                Design a graduate exit survey with standard PO questions and facility feedback.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
@@ -340,10 +431,10 @@ export default function InstitutionFeedbackPage() {
               {/* Form Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Form Title</Label>
+                  <Label htmlFor="title">Survey Title</Label>
                   <Input 
                     id="title" 
-                    placeholder="Enter form title" 
+                    placeholder="Enter survey title (e.g. Graduate Exit Survey 2024)" 
                     className="w-full"
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
@@ -351,27 +442,23 @@ export default function InstitutionFeedbackPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="semester">Semester</Label>
-                  <Select value={formSemester} onValueChange={setFormSemester}>
-                    <SelectTrigger id="semester" className="w-full">
-                      <SelectValue placeholder="Select semester" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Odd Semester 2023-24">Odd Semester 2023-24</SelectItem>
-                      <SelectItem value="Even Semester 2023-24">Even Semester 2023-24</SelectItem>
-                      <SelectItem value="Odd Semester 2024-25">Odd Semester 2024-25</SelectItem>
-                      <SelectItem value="Even Semester 2024-25">Even Semester 2024-25</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="batch">Batch (Year)</Label>
+                  <Input 
+                    id="batch" 
+                    placeholder="e.g. 2020-2024" 
+                    className="w-full"
+                    value={formBatch}
+                    onChange={(e) => setFormBatch(e.target.value)}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                  <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="description">Form Description</Label>
+                  <Label htmlFor="description">Description</Label>
                   <Textarea 
                     id="description" 
-                    placeholder="Enter a description for this feedback form" 
+                    placeholder="Enter a description for this survey" 
                     className="min-h-[80px] w-full resize-y"
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
@@ -395,12 +482,12 @@ export default function InstitutionFeedbackPage() {
               {/* Dynamic Areas & Questions Section */}
               <div className="space-y-6 pt-6 border-t">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <h3 className="text-lg font-semibold">Feedback Areas & Questions</h3>
+                  <h3 className="text-lg font-semibold">Survey Sections & Questions</h3>
                   
                   {/* Add Area Controls */}
                   <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                     <Input 
-                        placeholder="New Area Name (e.g. Canteen)" 
+                        placeholder="New Section Name" 
                         value={newAreaName} 
                         onChange={(e) => setNewAreaName(e.target.value)}
                         className="w-full sm:w-64"
@@ -419,7 +506,7 @@ export default function InstitutionFeedbackPage() {
                     </Select>
                     <Button onClick={addArea} disabled={!newAreaName.trim()} className="whitespace-nowrap">
                         <PlusCircle className="h-4 w-4 mr-2" />
-                        Add Area
+                        Add Section
                     </Button>
                   </div>
                 </div>
@@ -427,7 +514,7 @@ export default function InstitutionFeedbackPage() {
                 <div className="space-y-6">
                   {areas.length === 0 ? (
                       <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
-                          Start by adding an area (e.g., Infrastructure, Library) above.
+                          Start by adding a section above.
                       </div>
                   ) : (
                       areas.map((area) => (
@@ -435,7 +522,7 @@ export default function InstitutionFeedbackPage() {
                             <CardHeader className="pb-3 bg-muted/20 flex flex-row items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <CardTitle className="text-base font-medium">{area.name}</CardTitle>
-                                    <Badge variant={area.isMandatory ? "default" : "outline"}>
+                                    <Badge variant={area.isMandatory ? "default" : "secondary"}>
                                         {area.isMandatory ? "Mandatory" : "Optional"}
                                     </Badge>
                                 </div>
@@ -493,7 +580,7 @@ export default function InstitutionFeedbackPage() {
                 Cancel
               </Button>
               <Button className="w-32" onClick={handleSave}>
-                {isEditing ? "Update Form" : "Save Form"}
+                {isEditing ? "Update Survey" : "Save Survey"}
               </Button>
             </CardFooter>
           </Card>
@@ -502,21 +589,21 @@ export default function InstitutionFeedbackPage() {
 
       {/* View Dialog */}
       <Dialog open={!!viewForm} onOpenChange={(open) => !open && setViewForm(null)}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{viewForm?.title}</DialogTitle>
             <DialogDescription className="flex items-center gap-2 mt-2">
-              <Badge variant="outline">{viewForm?.semester}</Badge>
+              <Badge variant="outline">Batch: {viewForm?.batch}</Badge>
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4 space-y-4">
+          <div className="py-4 space-y-6">
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground uppercase">Description</Label>
               <p className="text-sm">{viewForm?.description || "No description provided."}</p>
             </div>
             
             <div className="space-y-4">
-              <Label className="text-sm text-muted-foreground uppercase">Feedback Areas & Questions</Label>
+              <Label className="text-sm text-muted-foreground uppercase">Sections & Questions</Label>
               {viewForm?.areas.map(area => (
                   <div key={area.id} className="border rounded-md p-4 bg-muted/10">
                       <div className="flex justify-between items-center mb-3">
@@ -532,7 +619,7 @@ export default function InstitutionFeedbackPage() {
                               </li>
                           ))}
                           {viewForm.questions.filter(q => q.areaId === area.id).length === 0 && (
-                              <li className="text-xs text-muted-foreground italic">No questions in this area.</li>
+                              <li className="text-xs text-muted-foreground italic">No questions in this section.</li>
                           )}
                       </ul>
                   </div>
@@ -549,12 +636,12 @@ export default function InstitutionFeedbackPage() {
       <Dialog open={!!toggleStatusForm} onOpenChange={(open) => !open && setToggleStatusForm(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{confirmActionLabel} Feedback Form</DialogTitle>
+            <DialogTitle>{confirmActionLabel} Survey</DialogTitle>
             <DialogDescription>
-              Are you sure you want to {confirmActionLabel.toLowerCase()} this form?
+              Are you sure you want to {confirmActionLabel.toLowerCase()} this survey?
               {isDeactivating 
-                ? " Students will no longer be able to submit feedback." 
-                : " This will deactivate any other currently active form."}
+                ? " Students will no longer be able to submit responses." 
+                : " This will deactivate any other currently active survey."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
