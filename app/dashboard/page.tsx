@@ -40,9 +40,9 @@ export default function Dashboard() {
 
     // Don't auto-select role - let user choose from dropdown
     // Only set if there's exactly one role (shouldn't happen, but safety check)
-    if (roles.length === 1) {
-      setSelectedRole(roles[0])
-    }
+    // if (roles.length === 1) {
+    //   setSelectedRole(roles[0])
+    // }
   }, [router])
 
   const handleRoleChange = (role: string) => {

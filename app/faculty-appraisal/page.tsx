@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { getCurrentUser } from "@/lib/auth"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,11 +15,15 @@ export default function FacultyAppraisalPage() {
   const [activeTab, setActiveTab] = useState("part-a")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const [user, setUser] = useState<any>(null)
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn")
     if (!isLoggedIn) {
       router.push("/")
+      return
     }
+    const u = getCurrentUser()
+    setUser(u)
   }, [router])
 
   const handleSaveAndContinue = () => {
@@ -45,12 +50,20 @@ export default function FacultyAppraisalPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
-              <Button onClick={() => router.push("/faculty-dashboard")} variant="outline" size="sm">
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Back
-              </Button>
-              <h1 className="text-2xl font-bold text-gray-800">Faculty Performance Management System</h1>
-            </div>
+                <Button onClick={() => router.push("/faculty-dashboard")} variant="outline" size="sm">
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back
+                </Button>
+                <h1 className="text-2xl font-bold text-gray-800">Faculty Performance Management System</h1>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <span className="font-medium">{user?.name || user?.facultyInfo?.first_name || user?.username}</span>
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">{(user?.name ? user.name.split(' ').map((s:string)=>s[0]).slice(0,2).join('') : (user?.username?.[0]||'U')).toUpperCase()}</span>
+                  </div>
+                </div>
+              </div>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -46,6 +46,17 @@ const submittedAppraisals = [
 export default function HODAppraisalPage() {
   const router = useRouter()
   const [selectedFacultyId, setSelectedFacultyId] = useState<number | null>(null)
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    const { getCurrentUser } = require('@/lib/auth')
+    try {
+      const u = getCurrentUser()
+      setUser(u)
+    } catch (e) {
+      // ignore
+    }
+  }, [])
 
   const handleViewAppraisal = (facultyId: number) => {
     setSelectedFacultyId(facultyId)
@@ -68,6 +79,14 @@ export default function HODAppraisalPage() {
                 Back
               </Button>
               <h1 className="text-2xl font-bold text-gray-800">Faculty Appraisal Review</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <span className="font-medium">{user?.name || user?.username || 'User'}</span>
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">{(user?.name ? user.name.split(' ').map((s:string)=>s[0]).slice(0,2).join('') : (user?.username?.[0]||'U')).toUpperCase()}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

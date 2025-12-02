@@ -1,8 +1,8 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { logout } from "@/lib/auth"
+import { getCurrentUser, logout } from "@/lib/auth"
 
 const HODDashboardPage = () => {
   const router = useRouter()
@@ -17,6 +17,13 @@ const HODDashboardPage = () => {
       setView("main")
     }
   }
+
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    const u = getCurrentUser()
+    setUser(u)
+  }, [])
 
   const handleLogout = async () => {
     await logout()
@@ -52,9 +59,9 @@ const HODDashboardPage = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="font-medium">Rajesh Sharma</span>
+                <span className="font-medium">{user?.name || user?.username || 'User'}</span>
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">RS</span>
+                  <span className="text-white text-xs">{(user?.name ? user.name.split(' ').map((s:string)=>s[0]).slice(0,2).join('') : (user?.username?.[0]||'U')).toUpperCase()}</span>
                 </div>
               </div>
               <Button onClick={handleLogout} variant="outline" size="sm">

@@ -31,15 +31,65 @@ router.post('/login', async (req, res) => {
           return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        // Generate JWT token for faculty
+        // Ensure there is a corresponding `users` record for this faculty so
+        // middleware that expects users table works consistently.
+        let userIdForToken = null;
+        try {
+          const [existingUsers] = await pool.execute(
+            'SELECT id FROM users WHERE faculty_id = ?',
+            [faculty.id]
+          );
+
+          if (existingUsers.length > 0) {
+            userIdForToken = existingUsers[0].id;
+          } else {
+            const username = faculty.official_email || faculty.faculty_id || `faculty_${faculty.id}`;
+            const email = faculty.official_email || null;
+            const [created] = await pool.execute(
+              `INSERT INTO users (username, email, user_type, faculty_id, is_active) VALUES (?, ?, ?, ?, ?)`,
+              [username, email, 'faculty', faculty.id, 1]
+            );
+            userIdForToken = created.insertId;
+          }
+        } catch (createErr) {
+          console.warn('Error ensuring users row for faculty:', createErr);
+        }
+
+        // Build user object and roles (including HOD roles if applicable)
+        const returnedUser = {
+          id: userIdForToken || faculty.id,
+          username: faculty.official_email,
+          userType: 'faculty',
+          name: `${faculty.first_name} ${faculty.last_name}`.trim(),
+          roles: [{ role: 'faculty' }]
+        };
+
+        try {
+          const [hodDepartments] = await pool.execute(
+            `SELECT id, name FROM departments WHERE hod_faculty_id = ? AND is_active = TRUE`,
+            [faculty.id]
+          );
+          for (const dept of hodDepartments) {
+            returnedUser.roles.push({ role: 'hod', departmentId: dept.id, departmentName: dept.name });
+
+            // Also ensure user_roles table has an entry for this auto-created user
+            if (userIdForToken) {
+              const [existingRole] = await pool.execute(
+                'SELECT id FROM user_roles WHERE user_id = ? AND role = ? AND department_id = ?',
+                [userIdForToken, 'hod', dept.id]
+              );
+              if (existingRole.length === 0) {
+                await pool.execute('INSERT INTO user_roles (user_id, role, department_id) VALUES (?, ?, ?)', [userIdForToken, 'hod', dept.id]);
+              }
+            }
+          }
+        } catch (hodErr) {
+          console.warn('Error checking HOD departments for faculty login:', hodErr);
+        }
+
+        // Generate JWT token using users.id so authenticateToken middleware works
         const token = jwt.sign(
-          { 
-            userId: faculty.id, 
-            username: faculty.official_email, 
-            userType: 'faculty',
-            facultyId: faculty.id,
-            name: `${faculty.first_name} ${faculty.last_name}`
-          },
+          { userId: returnedUser.id, username: returnedUser.username, userType: 'faculty' },
           process.env.JWT_SECRET || 'your-secret-key-change-in-production',
           { expiresIn: '24h' }
         );
@@ -47,13 +97,9 @@ router.post('/login', async (req, res) => {
         return res.json({
           success: true,
           message: 'Login successful',
-          token,
-          user: {
-            id: faculty.id,
-            username: faculty.official_email,
-            userType: 'faculty',
-            name: `${faculty.first_name} ${faculty.last_name}`,
-            roles: ['faculty']
+          data: {
+            token,
+            user: returnedUser
           }
         });
       }

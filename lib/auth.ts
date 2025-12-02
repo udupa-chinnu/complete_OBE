@@ -167,13 +167,15 @@ export function isHOD(): boolean {
 // Get available roles for user
 export function getAvailableRoles(): Array<'faculty' | 'hod'> {
   const user = getCurrentUser()
-  if (!user || user.userType !== 'faculty') return []
+  if (!user) return []
 
   const roles: Array<'faculty' | 'hod'> = []
-  
-  // Faculty role is always available
-  roles.push('faculty')
-  
+
+  // If user is faculty or explicitly has a faculty role, include faculty
+  if (user.userType === 'faculty' || (Array.isArray(user.roles) && user.roles.some(r => r.role === 'faculty'))) {
+    roles.push('faculty')
+  }
+
   // HOD role if user has it
   if (hasRole('hod')) {
     roles.push('hod')

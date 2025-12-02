@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { getCurrentUser, logout } from "@/lib/auth"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { logout } from "@/lib/auth"
 
 export default function FacultyDashboard() {
   const router = useRouter()
@@ -49,6 +49,16 @@ export default function FacultyDashboard() {
     setView("main")
   }
 
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    const u = getCurrentUser()
+    setUser(u)
+  }, [])
+
+  const displayName = user?.name || (user?.facultyInfo ? `${user.facultyInfo.first_name || ''} ${user.facultyInfo.last_name || ''}`.trim() : user?.username) || 'User'
+  const initials = (displayName.split(' ').map((s: string) => s[0]).slice(0,2).join('') || displayName[0] || 'U').toUpperCase()
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Fixed Header */}
@@ -65,12 +75,12 @@ export default function FacultyDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="font-medium">Rajesh Sharma</span>
+                <span className="font-medium">{displayName}</span>
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">RS</span>
+                  <span className="text-white text-xs">{initials}</span>
                 </div>
               </div>
-              <Button onClick={handleLogout} variant="outline" size="sm">
+              <Button onClick={async () => { await logout(); router.push('/') }} variant="outline" size="sm">
                 Logout
               </Button>
             </div>

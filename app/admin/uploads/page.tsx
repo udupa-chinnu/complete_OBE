@@ -39,9 +39,11 @@ export default function UploadsPage() {
   const fetchUploads = async () => {
     try {
       setLoading(true)
-      const response = await uploadsApi.getAll({ includeInactive: 'true' }) // Include inactive to show deactivated items
-      if (response.success && response.data) {
-        setUploads(response.data)
+      const response = await uploadsApi.getAll({ includeInactive: true }) // Include inactive to show deactivated items
+      if (response.success && Array.isArray(response.data)) {
+        setUploads(response.data as any[])
+      } else {
+        setUploads([])
       }
     } catch (error) {
       console.error("Error fetching uploads:", error)
@@ -53,8 +55,10 @@ export default function UploadsPage() {
   const fetchDepartments = async () => {
     try {
       const response = await departmentsApi.getAll()
-      if (response.success && response.data) {
-        setDepartments(response.data)
+      if (response.success && Array.isArray(response.data)) {
+        setDepartments(response.data as any[])
+      } else {
+        setDepartments([])
       }
     } catch (error) {
       console.error("Error fetching departments:", error)
