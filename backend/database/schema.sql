@@ -169,6 +169,7 @@ CREATE TABLE IF NOT EXISTS faculties (
     caste VARCHAR(50),
     blood_group VARCHAR(10),
     profile_photo_path VARCHAR(255),
+    password_hash VARCHAR(255),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

@@ -14,7 +14,52 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Username and password are required' });
     }
 
-    // Find user by username or email
+    // Check if username ends with @sahyadri.edu.in (faculty login)
+    if (username.includes('@sahyadri.edu.in') || username.includes('sahyadri.edu.in')) {
+      // Try to fetch from faculties table
+      const [faculties] = await pool.execute(
+        'SELECT id, faculty_id, official_email, password_hash, first_name, last_name FROM faculties WHERE official_email = ? AND is_active = TRUE',
+        [username]
+      );
+
+      if (faculties.length > 0) {
+        const faculty = faculties[0];
+
+        // Verify password
+        const isValidPassword = await bcrypt.compare(password, faculty.password_hash);
+        if (!isValidPassword) {
+          return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        // Generate JWT token for faculty
+        const token = jwt.sign(
+          { 
+            userId: faculty.id, 
+            username: faculty.official_email, 
+            userType: 'faculty',
+            facultyId: faculty.id,
+            name: `${faculty.first_name} ${faculty.last_name}`
+          },
+          process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          success: true,
+          message: 'Login successful',
+          token,
+          user: {
+            id: faculty.id,
+            username: faculty.official_email,
+            userType: 'faculty',
+            name: `${faculty.first_name} ${faculty.last_name}`,
+            roles: ['faculty']
+          }
+        });
+      }
+    }
+
+    // Fall back to users table for other authentication
     const [users] = await pool.execute(
       'SELECT * FROM users WHERE (username = ? OR email = ?) AND is_active = TRUE',
       [username, username]

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from 'next/navigation'
 import { Plus, Search, Edit, Trash2, Eye, Filter } from "lucide-react"
 import { Button } from "@/components/admin/button"
 import { Input } from "@/components/admin/input"
@@ -21,7 +22,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/admin/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/admin/select"
 import Link from "next/link"
 import { facultiesApi } from "@/lib/api"
-import { FacultyEditForm } from "@/components/faculty-edit-form"
 
 export default function FacultyPage() {
   const [faculty, setFaculty] = useState<any[]>([])
@@ -30,7 +30,7 @@ export default function FacultyPage() {
   const [departmentFilter, setDepartmentFilter] = useState("")
   const [designationFilter, setDesignationFilter] = useState("")
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const router = useRouter()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [currentFaculty, setCurrentFaculty] = useState<any>(null)
 
@@ -61,15 +61,15 @@ export default function FacultyPage() {
       fullName.includes(searchTerm.toLowerCase()) ||
       f.official_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       f.designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.parent_department?.toLowerCase().includes(searchTerm.toLowerCase())
+      f.appointed_to?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesDepartment = departmentFilter && departmentFilter !== "all" ? f.parent_department === departmentFilter : true
+    const matchesDepartment = departmentFilter && departmentFilter !== "all" ? f.appointed_to === departmentFilter : true
     const matchesDesignation = designationFilter && designationFilter !== "all" ? f.designation === designationFilter : true
 
     return matchesSearch && matchesDepartment && matchesDesignation
   })
 
-  const departments = Array.from(new Set(faculty.map(f => f.parent_department).filter(Boolean)))
+  const departments = Array.from(new Set(faculty.map(f => f.appointed_to).filter(Boolean)))
   const designations = Array.from(new Set(faculty.map(f => f.designation).filter(Boolean)))
 
   const handleDeleteFaculty = async (id: number) => {
@@ -102,31 +102,7 @@ export default function FacultyPage() {
     }
   }
 
-  const handleEditFaculty = async (updatedFaculty: any) => {
-    try {
-      const formData = new FormData()
-      Object.keys(updatedFaculty).forEach((key) => {
-        if (updatedFaculty[key] !== null && updatedFaculty[key] !== undefined) {
-          if (key === 'profilePhoto' && updatedFaculty[key] instanceof File) {
-            formData.append('profilePhoto', updatedFaculty[key])
-          } else {
-            formData.append(key, updatedFaculty[key])
-          }
-        }
-      })
-
-      const response = await facultiesApi.update(currentFaculty.id, formData)
-      if (response.success) {
-        await fetchFaculties()
-        setIsEditDialogOpen(false)
-      } else {
-        alert(response.message || "Failed to update faculty")
-      }
-    } catch (error) {
-      console.error("Error updating faculty:", error)
-      alert("Failed to update faculty. Please try again.")
-    }
-  }
+  // Edit now uses unified edit page at /admin/faculty/edit/:id
 
   if (loading) {
     return (
@@ -251,7 +227,7 @@ export default function FacultyPage() {
                     </div>
                   </TableCell>
                   <TableCell>{f.designation}</TableCell>
-                  <TableCell>{f.parent_department}</TableCell>
+                  <TableCell>{f.appointed_to}</TableCell>
                   <TableCell>{f.official_email}</TableCell>
                   <TableCell>
                     <Badge variant={f.is_active ? "default" : "secondary"}>
@@ -292,8 +268,8 @@ export default function FacultyPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
-                            setCurrentFaculty(f)
-                            setIsEditDialogOpen(true)
+                            // Navigate to unified edit page so the UI matches "View -> Edit Details"
+                            router.push(`/admin/faculty/edit/${f.id}`)
                           }}
                         >
                           <Edit className="mr-2 h-4 w-4" />
@@ -353,10 +329,10 @@ export default function FacultyPage() {
                   </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-1">
-                    <Label>Department</Label>
-                    <p>{currentFaculty.parent_department}</p>
-                  </div>
+                <div className="space-y-1">
+                  <Label>Department</Label>
+                  <p>{currentFaculty.appointed_to}</p>
+                </div>
                   <div className="space-y-1">
                     <Label>Email</Label>
                     <p>{currentFaculty.official_email}</p>
@@ -399,7 +375,7 @@ export default function FacultyPage() {
                 <div className="space-y-4">
                   <div className="rounded-md border p-4">
                     <h3 className="font-semibold">{currentFaculty.designation}</h3>
-                    <p className="text-sm text-muted-foreground">Department: {currentFaculty.parent_department}</p>
+                    <p className="text-sm text-muted-foreground">Department: {currentFaculty.appointed_to}</p>
                     <p className="text-sm text-muted-foreground">
                       Joined on: {currentFaculty.joining_date ? new Date(currentFaculty.joining_date).toLocaleDateString() : 'N/A'}
                     </p>
@@ -428,22 +404,7 @@ export default function FacultyPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Faculty Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Faculty</DialogTitle>
-            <DialogDescription>Update the faculty member's information.</DialogDescription>
-          </DialogHeader>
-          {currentFaculty && (
-            <FacultyEditForm
-              faculty={currentFaculty}
-              onSubmit={handleEditFaculty}
-              onCancel={() => setIsEditDialogOpen(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Edit via unified edit page (action -> Edit now routes to /admin/faculty/edit/:id) */}
 
       {/* Delete Faculty Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

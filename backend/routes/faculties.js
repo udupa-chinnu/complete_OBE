@@ -35,6 +35,23 @@ const upload = multer({
   }
 });
 
+// Helper to sanitize parameter arrays: replace undefined with null and log diagnostics
+function sanitizeParams(arr, cols) {
+  const undefinedIndices = arr
+    .map((v, i) => (v === undefined ? i : -1))
+    .filter((i) => i !== -1);
+
+  if (undefinedIndices.length > 0) {
+    console.warn('sanitizeParams: found undefined values at indices:', undefinedIndices);
+    undefinedIndices.forEach((idx) => {
+      const colName = (cols && cols[idx]) ? cols[idx] : `index_${idx}`;
+      console.warn(`  -> ${colName} (idx ${idx}) is undefined; converting to NULL`);
+    });
+  }
+
+  return arr.map((v) => (v === undefined ? null : v));
+}
+
 // GET all faculties (active only by default)
 router.get('/', async (req, res) => {
   try {
@@ -184,71 +201,61 @@ router.post('/', upload.single('profilePhoto'), async (req, res) => {
       nationality, religion, category, caste, bloodGroup,
       appointmentLetterNumber, appointmentDate, parentDepartment,
       joiningDate, designationDate, associateType, currentlyAssociated,
-      appointedTo, academicExperience, researchExperience, industryExperience
+      appointedTo, academicExperience, researchExperience, industryExperience,
+      // Additional details
+      height, contactNumber, bankAccountNumber, bankName, bankBranch, ifscCode,
+      pan, aadharNumber, maritalStatus, spouseName, uan,
+      googleScholar, scopusId, orcId, preExistingAilments,
+      qualifications = '[]'
     } = req.body;
     
-    // Insert faculty personal info
-    const [facultyResult] = await connection.execute(
-      `INSERT INTO faculties (
-        faculty_id, title, first_name, middle_name, last_name, call_name, initials,
-        designation, date_of_birth, gender, permanent_address, current_address,
-        city, state, pincode, residence_number, personal_email, official_email,
-        nationality, religion, category, caste, blood_group, profile_photo_path
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        facultyId, title, firstName, middleName, lastName, callName, initials,
-        designation, dateOfBirth || null, gender, permanentAddress, currentAddress,
-        city, state, pincode, residenceNumber, personalEmail, officialEmail,
-        nationality, religion, category, caste, bloodGroup,
-        req.file ? `/uploads/faculties/${req.file.filename}` : null
-      ]
-    );
+    // Hash password with default 'faculty123'
+    const bcrypt = require('bcryptjs');
+    const defaultPassword = 'faculty123';
+    const passwordHash = await bcrypt.hash(defaultPassword, 10);
+    
+    // Insert faculty personal info with password_hash
+    const facultyColumns = [
+      'faculty_id','title','first_name','middle_name','last_name','call_name','initials',
+      'designation','date_of_birth','gender','permanent_address','current_address',
+      'city','state','pincode','residence_number','personal_email','official_email',
+      'nationality','religion','category','caste','blood_group','profile_photo_path','password_hash'
+    ]
+
+    const facultyValues = [
+      facultyId, title, firstName, middleName, lastName, callName, initials,
+      designation, dateOfBirth || null, gender, permanentAddress, currentAddress,
+      city, state, pincode, residenceNumber, personalEmail, officialEmail,
+      nationality, religion, category, caste, bloodGroup,
+      req.file ? `/uploads/faculties/${req.file.filename}` : null,
+      passwordHash
+    ]
+
+    // Debugging: ensure columns and values length match
+    if (facultyColumns.length !== facultyValues.length) {
+      console.error('Faculty INSERT mismatch: columns:', facultyColumns.length, 'values:', facultyValues.length)
+    }
+
+    // Sanitize undefined values -> use null for SQL NULL
+    const undefinedIndices = facultyValues
+      .map((v, i) => (v === undefined ? i : -1))
+      .filter((i) => i !== -1)
+
+    if (undefinedIndices.length > 0) {
+      console.warn('Faculty INSERT has undefined values for columns at indices:', undefinedIndices)
+      undefinedIndices.forEach((idx) => {
+        console.warn(`  Column '${facultyColumns[idx]}' is undefined - substituting NULL`)
+      })
+    }
+
+    const sanitizedValues = facultyValues.map((v) => (v === undefined ? null : v))
+
+    const placeholders = sanitizedValues.map(() => '?').join(', ')
+    const insertQuery = `INSERT INTO faculties (${facultyColumns.join(', ')}) VALUES (${placeholders})`
+
+    const [facultyResult] = await connection.execute(insertQuery, sanitizedValues);
     
     const facultyIdInserted = facultyResult.insertId;
-    
-    // Auto-create user account for faculty if official email is provided
-    if (officialEmail) {
-      try {
-        const bcrypt = require('bcryptjs');
-        const defaultPassword = 'fac123';
-        const passwordHash = await bcrypt.hash(defaultPassword, 10);
-        
-        // Check if user already exists with this email
-        const [existingUser] = await connection.execute(
-          'SELECT id FROM users WHERE email = ? OR username = ?',
-          [officialEmail, officialEmail]
-        );
-        
-        if (existingUser.length === 0) {
-          // Create user account
-          const [userResult] = await connection.execute(
-            `INSERT INTO users (username, email, password_hash, user_type, faculty_id, is_active) 
-             VALUES (?, ?, ?, 'faculty', ?, TRUE)`,
-            [officialEmail, officialEmail, passwordHash, facultyIdInserted]
-          );
-          
-          const userId = userResult.insertId;
-          
-          // Automatically assign "faculty" role
-          await connection.execute(
-            'INSERT INTO user_roles (user_id, role) VALUES (?, ?)',
-            [userId, 'faculty']
-          );
-          
-          console.log(`User account created for faculty: ${officialEmail} with default password: ${defaultPassword}`);
-        } else {
-          // Update existing user to link to this faculty
-          await connection.execute(
-            'UPDATE users SET faculty_id = ? WHERE id = ?',
-            [facultyIdInserted, existingUser[0].id]
-          );
-          console.log(`Existing user account linked to faculty: ${officialEmail}`);
-        }
-      } catch (userError) {
-        // Log error but don't fail faculty creation
-        console.error('Error creating user account for faculty:', userError);
-      }
-    }
     
     // Insert employment info
     await connection.execute(
@@ -257,13 +264,38 @@ router.post('/', upload.single('profilePhoto'), async (req, res) => {
         joining_date, designation_date, associate_type, currently_associated,
         appointed_to, academic_experience, research_experience, industry_experience
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
+      sanitizeParams([
         facultyIdInserted, appointmentLetterNumber, appointmentDate || null,
         parentDepartment, joiningDate || null, designationDate || null,
         associateType, currentlyAssociated, appointedTo,
         academicExperience || 0, researchExperience || 0, industryExperience || 0
-      ]
+      ], [
+        'faculty_id','appointment_letter_number','appointment_date','parent_department',
+        'joining_date','designation_date','associate_type','currently_associated',
+        'appointed_to','academic_experience','research_experience','industry_experience'
+      ])
     );
+
+    // Insert qualifications
+    let qualArray = [];
+    try {
+      qualArray = JSON.parse(qualifications);
+    } catch (e) {
+      qualArray = [];
+    }
+    
+    if (Array.isArray(qualArray) && qualArray.length > 0) {
+      for (const qual of qualArray) {
+        await connection.execute(
+          `INSERT INTO faculty_qualifications (
+            faculty_id, qualification_type, degree, specialization, university, year_of_completion
+          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          sanitizeParams([facultyIdInserted, qual.qualification_type, qual.degree, qual.specialization || null, qual.university || null, qual.year_of_completion || null], [
+            'faculty_id','qualification_type','degree','specialization','university','year_of_completion'
+          ])
+        );
+      }
+    }
     
     // Insert additional details if provided
     if (contactNumber || bankAccountNumber || pan || aadharNumber) {
@@ -273,15 +305,19 @@ router.post('/', upload.single('profilePhoto'), async (req, res) => {
           ifsc_code, pan, aadhar_number, marital_status, spouse_name, uan,
           google_scholar, scopus_id, orcid, pre_existing_ailments
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
+        sanitizeParams([
           facultyIdInserted, height || null, contactNumber || null, bankAccountNumber || null,
           bankName || null, bankBranch || null, ifscCode || null, pan || null,
           aadharNumber || null, maritalStatus || 'Unmarried', spouseName || null, uan || null,
           googleScholar || null, scopusId || null, orcId || null, preExistingAilments || null
-        ]
+        ], [
+          'faculty_id','height','contact_number','bank_account_number','bank_name','bank_branch',
+          'ifsc_code','pan','aadhar_number','marital_status','spouse_name','uan',
+          'google_scholar','scopus_id','orcid','pre_existing_ailments'
+        ])
       );
     }
-    
+
     await connection.commit();
     res.status(201).json({ success: true, message: 'Faculty created successfully', data: { id: facultyIdInserted } });
   } catch (error) {
@@ -339,12 +375,17 @@ router.put('/:id', upload.single('profilePhoto'), async (req, res) => {
         residence_number = ?, personal_email = ?, official_email = ?, nationality = ?,
         religion = ?, category = ?, caste = ?, blood_group = ?, profile_photo_path = ?
       WHERE id = ?`,
-      [
+      sanitizeParams([
         facultyId, title, firstName, middleName, lastName, callName, initials,
         designation, dateOfBirth || null, gender, permanentAddress, currentAddress,
         city, state, pincode, residenceNumber, personalEmail, officialEmail,
         nationality, religion, category, caste, bloodGroup, profilePhotoPath, id
-      ]
+      ], [
+        'faculty_id','title','first_name','middle_name','last_name','call_name','initials',
+        'designation','date_of_birth','gender','permanent_address','current_address',
+        'city','state','pincode','residence_number','personal_email','official_email',
+        'nationality','religion','category','caste','blood_group','profile_photo_path','id'
+      ])
     );
     
     // Update employment info
@@ -354,12 +395,41 @@ router.put('/:id', upload.single('profilePhoto'), async (req, res) => {
         joining_date = ?, designation_date = ?, associate_type = ?, currently_associated = ?,
         appointed_to = ?, academic_experience = ?, research_experience = ?, industry_experience = ?
       WHERE faculty_id = ?`,
-      [
+      sanitizeParams([
         appointmentLetterNumber, appointmentDate || null, parentDepartment,
         joiningDate || null, designationDate || null, associateType, currentlyAssociated,
         appointedTo, academicExperience || 0, researchExperience || 0, industryExperience || 0, id
-      ]
+      ], [
+        'appointment_letter_number','appointment_date','parent_department',
+        'joining_date','designation_date','associate_type','currently_associated',
+        'appointed_to','academic_experience','research_experience','industry_experience','faculty_id'
+      ])
     );
+
+    // Handle qualifications (delete and recreate)
+    let qualArray = [];
+    try {
+      qualArray = JSON.parse(req.body.qualifications || '[]');
+    } catch (e) {
+      qualArray = [];
+    }
+    
+    // Delete existing qualifications
+    await connection.execute('DELETE FROM faculty_qualifications WHERE faculty_id = ?', [id]);
+    
+    // Insert new qualifications
+    if (Array.isArray(qualArray) && qualArray.length > 0) {
+      for (const qual of qualArray) {
+        await connection.execute(
+          `INSERT INTO faculty_qualifications (
+            faculty_id, qualification_type, degree, specialization, university, year_of_completion
+          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          sanitizeParams([id, qual.qualification_type, qual.degree, qual.specialization || null, qual.university || null, qual.year_of_completion || null], [
+            'faculty_id','qualification_type','degree','specialization','university','year_of_completion'
+          ])
+        );
+      }
+    }
     
     // Update or insert additional details
     const [existingDetails] = await connection.execute(
@@ -375,12 +445,16 @@ router.put('/:id', upload.single('profilePhoto'), async (req, res) => {
           ifsc_code = ?, pan = ?, aadhar_number = ?, marital_status = ?, spouse_name = ?, uan = ?,
           google_scholar = ?, scopus_id = ?, orcid = ?, pre_existing_ailments = ?
         WHERE faculty_id = ?`,
-        [
+        sanitizeParams([
           height || null, contactNumber || null, bankAccountNumber || null,
           bankName || null, bankBranch || null, ifscCode || null, pan || null,
           aadharNumber || null, maritalStatus || 'Unmarried', spouseName || null, uan || null,
           googleScholar || null, scopusId || null, orcId || null, preExistingAilments || null, id
-        ]
+        ], [
+          'height','contact_number','bank_account_number','bank_name','bank_branch',
+          'ifsc_code','pan','aadhar_number','marital_status','spouse_name','uan',
+          'google_scholar','scopus_id','orcid','pre_existing_ailments','faculty_id'
+        ])
       );
     } else if (contactNumber || bankAccountNumber || pan || aadharNumber) {
       // Insert new
@@ -390,12 +464,16 @@ router.put('/:id', upload.single('profilePhoto'), async (req, res) => {
           ifsc_code, pan, aadhar_number, marital_status, spouse_name, uan,
           google_scholar, scopus_id, orcid, pre_existing_ailments
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
+        sanitizeParams([
           id, height || null, contactNumber || null, bankAccountNumber || null,
           bankName || null, bankBranch || null, ifscCode || null, pan || null,
           aadharNumber || null, maritalStatus || 'Unmarried', spouseName || null, uan || null,
           googleScholar || null, scopusId || null, orcId || null, preExistingAilments || null
-        ]
+        ], [
+          'faculty_id','height','contact_number','bank_account_number','bank_name','bank_branch',
+          'ifsc_code','pan','aadhar_number','marital_status','spouse_name','uan',
+          'google_scholar','scopus_id','orcid','pre_existing_ailments'
+        ])
       );
     }
     

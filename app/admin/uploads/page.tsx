@@ -227,7 +227,7 @@ export default function UploadsPage() {
                 <TableRow key={upload.id}>
                   <TableCell className="font-medium">{upload.title}</TableCell>
                   <TableCell>{upload.type}</TableCell>
-                  <TableCell>{upload.department_name || "N/A"}</TableCell>
+                  <TableCell>{upload.department_name || "Institute Level"}</TableCell>
                   <TableCell>{new Date(upload.upload_date).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Badge variant={upload.is_active ? "default" : "secondary"}>
@@ -314,7 +314,7 @@ export default function UploadsPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Department</Label>
-                <div className="col-span-3">{currentUpload.department_name || "N/A"}</div>
+                <div className="col-span-3">{currentUpload.department_name || "Institute Level"}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Upload Date</Label>
