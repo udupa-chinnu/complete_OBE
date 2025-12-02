@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { API_BASE_URL } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/admin/card"
 import { Button } from "@/components/admin/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/admin/tabs"
@@ -38,61 +39,6 @@ type GraduateExitReport = {
   isActive: boolean
 }
 
-// --- Initial Data ---
-const initialFacultyReports: FacultyReport[] = [
-  {
-    id: 1,
-    faculty: "Dr. Sharma",
-    department: "Information Science & Engineering",
-    subject: "Data Structures",
-    semester: "Odd Semester 2023-24",
-    responseCount: 45,
-    isActive: true,
-  },
-  {
-    id: 2,
-    faculty: "Dr. Patel",
-    department: "Information Science & Engineering",
-    subject: "Database Management",
-    semester: "Odd Semester 2023-24",
-    responseCount: 42,
-    isActive: false,
-  },
-]
-
-const initialInstitutionReports: InstitutionReport[] = [
-  {
-    id: 1,
-    title: "Institution Infrastructure Feedback - 2023",
-    semester: "Odd Semester 2023-24",
-    responseCount: 320,
-    isActive: true,
-  },
-  {
-    id: 2,
-    title: "Administrative Services Feedback - 2023",
-    semester: "Odd Semester 2023-24",
-    responseCount: 180,
-    isActive: false,
-  },
-]
-
-const initialGraduateExitReports: GraduateExitReport[] = [
-  {
-    id: 1,
-    title: "Graduate Exit Survey - 2024",
-    batch: "2020-2024",
-    responseCount: 150,
-    isActive: true,
-  },
-  {
-    id: 2,
-    title: "Graduate Exit Survey - 2023",
-    batch: "2019-2023",
-    responseCount: 145,
-    isActive: false,
-  },
-]
 
 export default function FeedbackReportsPage() {
   const [activeTab, setActiveTab] = useState("faculty")
@@ -101,9 +47,13 @@ export default function FeedbackReportsPage() {
   const [selectedSemester, setSelectedSemester] = useState("")
   
   // Data States
-  const [facultyReports] = useState(initialFacultyReports)
-  const [institutionReports] = useState(initialInstitutionReports)
-  const [graduateExitReports] = useState(initialGraduateExitReports)
+  const [facultyReports, setFacultyReports] = useState<FacultyReport[]>([])
+  const [institutionReports, setInstitutionReports] = useState<InstitutionReport[]>([])
+  const [graduateExitReports, setGraduateExitReports] = useState<GraduateExitReport[]>([])
+
+  // Lookups
+  const [departments, setDepartments] = useState<Array<any>>([])
+  const [semesters, setSemesters] = useState<Array<any>>([])
 
   // Dialog States
   const [viewReport, setViewReport] = useState<any | null>(null)
@@ -131,9 +81,83 @@ export default function FeedbackReportsPage() {
     return matchesSearch
   })
 
+  // Load reports and lookups
+  const refreshReports = async () => {
+    try {
+      // Departments
+      const dRes = await fetch(`${API_BASE_URL}/departments`)
+      const dJson = await dRes.json()
+      if (dJson.success) setDepartments(dJson.data || [])
+
+      // Faculty forms -> facultyReports (form-level summary)
+      const fRes = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public`)
+      const fJson = await fRes.json()
+      if (fJson.success) {
+        const mapped = (fJson.data || []).map((f: any) => ({
+          id: f.id,
+          faculty: f.title,
+          department: f.department_name || '',
+          subject: '',
+          semester: f.semester_name || '',
+          responseCount: f.total_responses || 0,
+          isActive: f.status === 'Active'
+        }))
+        setFacultyReports(mapped)
+      }
+
+      // Institution forms -> institutionReports
+      const iRes = await fetch(`${API_BASE_URL}/academic-swo/institution-feedback/public`)
+      const iJson = await iRes.json()
+      if (iJson.success) {
+        const mapped = (iJson.data || []).map((f: any) => ({
+          id: f.id,
+          title: f.title,
+          semester: f.semester_name || '',
+          responseCount: f.total_responses || 0,
+          isActive: f.status === 'Active'
+        }))
+        setInstitutionReports(mapped)
+      }
+
+      // Graduate exit forms -> graduateExitReports
+      const gRes = await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/public`)
+      const gJson = await gRes.json()
+      if (gJson.success) {
+        const mapped = (gJson.data || []).map((f: any) => ({
+          id: f.id,
+          title: f.title,
+          batch: f.semester_name || '',
+          responseCount: f.total_responses || 0,
+          isActive: f.status === 'Active'
+        }))
+        setGraduateExitReports(mapped)
+      }
+
+      // derive semesters from any returned list
+      const semMap: Record<string,string> = {}
+      ;(fJson.data || []).forEach((f: any) => { if (f.semester_id && f.semester_name) semMap[String(f.semester_id)] = f.semester_name })
+      ;(iJson.data || []).forEach((f: any) => { if (f.semester_id && f.semester_name) semMap[String(f.semester_id)] = f.semester_name })
+      ;(gJson.data || []).forEach((f: any) => { if (f.semester_id && f.semester_name) semMap[String(f.semester_id)] = f.semester_name })
+      const sems = Object.entries(semMap).map(([id,name]) => ({ id: Number(id), name }))
+      setSemesters(sems)
+
+    } catch (err) {
+      console.error('Error loading report lists', err)
+    }
+  }
+
+  // Load once
+  useEffect(() => { refreshReports() }, [])
+
   // Handlers
   const handleView = (report: any) => {
     setViewReport(report)
+  }
+
+  const handleDownloadPdf = (formId: number) => {
+    // Opens export endpoint (protected) in new tab — backend will handle download or auth
+    const url = `${API_BASE_URL}/academic-swo/feedback-reports/export/${formId}/pdf`
+    window.open(url, '_blank')
   }
 
   return (
@@ -406,7 +430,7 @@ export default function FeedbackReportsPage() {
           </div>
           <DialogFooter className="flex justify-between sm:justify-between">
              <Button variant="outline" onClick={() => setViewReport(null)}>Close</Button>
-             <Button variant="default"><FileDown className="w-4 h-4 mr-2"/> Download PDF</Button>
+             <Button variant="default" onClick={() => handleDownloadPdf(viewReport?.id)}><FileDown className="w-4 h-4 mr-2"/> Download PDF</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

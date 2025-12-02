@@ -23,6 +23,12 @@ app.use('/api/institution', require('./routes/institution'));
 app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/uploads', require('./routes/uploads'));
 
+// Academic SWO (Student Welfare & Outcome) Routes
+app.use('/api/academic-swo/faculty-feedback', require('./routes/academic-faculty-feedback'));
+app.use('/api/academic-swo/institution-feedback', require('./routes/academic-institution-feedback'));
+app.use('/api/academic-swo/graduate-exit-survey', require('./routes/academic-graduate-exit-survey'));
+app.use('/api/academic-swo/feedback-reports', require('./routes/academic-feedback-reports'));
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Education Portal API is running' });

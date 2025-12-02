@@ -4,6 +4,7 @@ const pool = require('../config/database');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { log } = require('console');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -162,7 +163,7 @@ router.get('/dropdown/active', async (req, res) => {
       WHERE is_active = TRUE 
       ORDER BY first_name, last_name`
     );
-    
+    console.log("fetching")
     res.json({ success: true, data: faculties });
   } catch (error) {
     console.error('Error fetching faculties for dropdown:', error);

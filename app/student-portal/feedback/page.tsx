@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { API_BASE_URL } from '@/lib/api'
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
@@ -9,30 +10,95 @@ import { ArrowLeft, Star, MessageSquare } from "lucide-react"
 export default function FeedbackPage() {
   const router = useRouter()
   const [feedbackType, setFeedbackType] = useState<"faculty" | "general" | null>(null)
-  const [selectedFaculty, setSelectedFaculty] = useState("")
-  const [ratings, setRatings] = useState<Record<string, number>>({})
+  const [selectedFaculty, setSelectedFaculty] = useState<string | number>("")
+  const [answersMap, setAnswersMap] = useState<Record<string, any>>({})
   const [comments, setComments] = useState("")
+  const [faculties, setFaculties] = useState<Array<any>>([])
+  const [activeForm, setActiveForm] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+  const [ratings, setRatings] = useState<Record<string | number, number>>({})
 
-  const faculties = [
-    { id: 1, name: "Dr. Sarah Johnson", subject: "Data Structures" },
-    { id: 2, name: "Prof. Mike Wilson", subject: "Web Development" },
-    { id: 3, name: "Dr. Emily Davis", subject: "Database Systems" },
-    { id: 4, name: "Prof. Robert Brown", subject: "Data Structures Lab" },
-    { id: 5, name: "Prof. Jennifer Smith", subject: "Web Development Lab" },
-  ]
+  useEffect(() => {
+    // Fetch active faculty feedback form and active faculties dropdown
+    async function load() {
+      try {
+        const fRes = await fetch(`${API_BASE_URL}/faculties/dropdown/active`)
+        const fJson = await fRes.json()
+        if (fJson.success) setFaculties(fJson.data)
+        const listRes = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public`)
+        const listJson = await listRes.json()
+        if (listJson.success && Array.isArray(listJson.data)) {
+          const active = listJson.data.find((f: any) => f.status === 'Active')
+          if (active) {
+            const detailRes = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public/${active.id}`)
+            const detailJson = await detailRes.json()
+            if (detailJson.success) setActiveForm(detailJson.data)
+          }
+        }
+      } catch (err) {
+        console.error('Error loading feedback form or faculties', err)
+      }
+    }
+    load()
+  }, [])
 
-  const criteria = ["Knowledge", "Teaching Method", "Communication", "Availability", "Overall"]
-
-  const handleRating = (criterion: string, rating: number) => {
-    setRatings((prev) => ({ ...prev, [criterion]: rating }))
+  const handleRating = (questionId: string | number, rating: number) => {
+    setAnswersMap(prev => ({ ...prev, [String(questionId)]: { ...prev[String(questionId)], answer_rating: rating } }))
+    setRatings(prev => ({ ...prev, [String(questionId)]: rating }))
   }
 
-  const handleSubmit = () => {
-    alert("Feedback submitted successfully!")
-    setFeedbackType(null)
-    setSelectedFaculty("")
-    setRatings({})
-    setComments("")
+  const handleTextAnswer = (questionId: string | number, text: string) => {
+    setAnswersMap(prev => ({ ...prev, [String(questionId)]: { ...prev[String(questionId)], answer_text: text } }))
+  }
+
+  const handleSubmit = async () => {
+    if (!activeForm) return alert('No active form available')
+    if (!selectedFaculty) return alert('Please select a faculty member')
+
+    // Build answers array from areas/questions
+    const answers: any[] = []
+    for (const area of (activeForm.areas || [])) {
+      for (const q of (area.questions || [])) {
+        const stored = answersMap[String(q.id)]
+        if (q.question_type === 'rating') {
+          answers.push({ question_id: q.id, answer_rating: stored?.answer_rating ?? null })
+        } else {
+          answers.push({ question_id: q.id, answer_text: stored?.answer_text ?? '' })
+        }
+      }
+    }
+
+    setLoading(true)
+    try {
+      const payload = {
+        respondent_user_id: 1, // placeholder; replace with actual logged-in user id when auth is enabled
+        respondent_type: 'student',
+        faculty_id: Number(selectedFaculty),
+        answers
+      }
+
+      const res = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/${activeForm.id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      const json = await res.json()
+      if (json.success) {
+        alert('Feedback submitted successfully!')
+        setFeedbackType(null)
+        setSelectedFaculty('')
+        setAnswersMap({})
+        setComments('')
+      } else {
+        alert('Error submitting feedback: ' + (json.message || 'unknown'))
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Error submitting feedback')
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!feedbackType) {
@@ -116,37 +182,35 @@ export default function FeedbackPage() {
                     <option value="">-- Choose a faculty member --</option>
                     {faculties.map((faculty) => (
                       <option key={faculty.id} value={faculty.id}>
-                        {faculty.name} ({faculty.subject})
+                        {faculty.full_name || faculty.name || faculty.first_name || faculty.faculty_id}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                {selectedFaculty && (
+                {selectedFaculty && activeForm && (
                   <div className="space-y-6 pt-6 border-t">
-                    {criteria.map((criterion) => (
-                      <div key={criterion} className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700">{criterion}</label>
-                        <div className="flex items-center space-x-2">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              onClick={() => handleRating(criterion, star)}
-                              className="transition-transform hover:scale-110"
-                            >
-                              <Star
-                                className={`w-8 h-8 ${
-                                  ratings[criterion] && ratings[criterion] >= star
-                                    ? "fill-yellow-400 text-yellow-400"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                            </button>
-                          ))}
-                          {ratings[criterion] && (
-                            <span className="text-sm font-semibold text-gray-700 ml-2">{ratings[criterion]}/5</span>
-                          )}
-                        </div>
+                    {activeForm.areas.map((area: any) => (
+                      <div key={area.id} className="space-y-4">
+                        <h3 className="font-semibold">{area.area_name}</h3>
+                        {area.questions.map((q: any) => (
+                          <div key={q.id} className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">{q.question_text}</label>
+                            {q.question_type === 'rating' && (
+                              <div className="flex items-center space-x-2">
+                                {[1,2,3,4,5].map((n) => (
+                                  <button key={n} onClick={() => handleRating(q.id, n)} className="transition-transform hover:scale-110">
+                                    <Star className={`w-7 h-7 ${ratings[String(q.id)] && ratings[String(q.id)] >= n ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                                  </button>
+                                ))}
+                                {ratings[String(q.id)] && <span className="text-sm font-semibold text-gray-700 ml-2">{ratings[String(q.id)]}/5</span>}
+                              </div>
+                            )}
+                            {q.question_type !== 'rating' && (
+                              <textarea value={answersMap[String(q.id)]?.answer_text || ''} onChange={(e) => handleTextAnswer(q.id, e.target.value)} className="w-full px-3 py-2 border rounded" rows={3} />
+                            )}
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>

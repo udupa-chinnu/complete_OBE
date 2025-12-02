@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { API_BASE_URL } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/admin/card"
 import { Button } from "@/components/admin/button"
 import { Input } from "@/components/admin/input"
@@ -10,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/admin/select"
 import { Textarea } from "@/components/admin/textarea"
 import { Switch } from "@/components/admin/switch"
-import { PlusCircle, Edit, Power, Eye, Trash2 } from "lucide-react"
+import { PlusCircle, Edit, Power, Eye, Plus, X, Trash2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/admin/dialog"
 import { Badge } from "@/components/admin/badge"
 
@@ -18,7 +19,6 @@ import { Badge } from "@/components/admin/badge"
 type Question = {
   id: number
   text: string
-  type: string // Kept for data consistency, but fixed to 'rating' in UI
 }
 
 type FeedbackForm = {
@@ -26,60 +26,60 @@ type FeedbackForm = {
   title: string
   department: string
   semester: string
-  status: "Active" | "Inactive" // Changed from 'Draft'
+  status: "Active" | "Inactive"
   createdAt: string
   description: string
   questions: Question[]
 }
 
-// Sample data
-const initialForms: FeedbackForm[] = [
-  {
-    id: 1,
-    title: "Faculty Performance Evaluation - 2023",
-    department: "Information Science & Engineering",
-    semester: "Odd Semester 2023-24",
-    status: "Active",
-    createdAt: "2023-08-15",
-    description: "Standard evaluation form for faculty performance.",
-    questions: [
-      { id: 1, text: "The faculty is well prepared for the class and delivers the content effectively.", type: "rating" },
-      { id: 2, text: "The faculty encourages student participation and interaction.", type: "rating" },
-    ],
-  },
-  {
-    id: 2,
-    title: "Lab Instruction Evaluation - 2023",
-    department: "Information Science & Engineering",
-    semester: "Odd Semester 2023-24",
-    status: "Inactive", // Changed from 'Draft'
-    createdAt: "2023-08-20",
-    description: "Feedback regarding laboratory sessions.",
-    questions: [
-      { id: 1, text: "The lab instructor explains the experiments clearly.", type: "rating" },
-    ],
-  },
-]
 
 export default function FacultyFeedbackPage() {
   const [activeTab, setActiveTab] = useState("existing")
-  const [forms, setForms] = useState<FeedbackForm[]>(initialForms)
-  
+  const [forms, setForms] = useState<FeedbackForm[]>([])
+
+  // Lookups
+  const [departments, setDepartments] = useState<Array<any>>([])
+  const [semesters, setSemesters] = useState<Array<any>>([])
+
   // Form State
   const [isEditing, setIsEditing] = useState(false)
   const [currentFormId, setCurrentFormId] = useState<number | null>(null)
   const [formTitle, setFormTitle] = useState("")
   const [formDepartment, setFormDepartment] = useState("")
   const [formSemester, setFormSemester] = useState("")
-  const [formStatus, setFormStatus] = useState<boolean>(false) // false = Inactive, true = Active
+  const [formStatus, setFormStatus] = useState<boolean>(false)
   const [formDescription, setFormDescription] = useState("")
-  const [questions, setQuestions] = useState<Question[]>([{ id: 1, text: "", type: "rating" }])
+  const [questions, setQuestions] = useState<Question[]>([{ id: 1, text: "" }])
 
   // Dialog States
   const [viewForm, setViewForm] = useState<FeedbackForm | null>(null)
   const [toggleStatusForm, setToggleStatusForm] = useState<FeedbackForm | null>(null)
 
-  // --- Form Handlers ---
+  // Load forms, departments and semesters
+  const refreshForms = async () => {
+    try {
+      const dRes = await fetch(`${API_BASE_URL}/departments`)
+      const dJson = await dRes.json()
+      if (dJson.success) setDepartments(dJson.data || [])
+
+      const res = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public`)
+      const json = await res.json()
+      if (json.success) {
+        setForms(json.data || [])
+        const semMap: Record<string,string> = {}
+        if (Array.isArray(json.data)) {
+          json.data.forEach((f: any) => { if (f.semester_id && f.semester_name) semMap[String(f.semester_id)] = f.semester_name })
+        }
+        const semMapEntries = Object.entries(semMap)
+        const sems = semMapEntries.map(([id,name]) => ({ id: Number(id), name }))
+        setSemesters(sems)
+      }
+    } catch (err) {
+      console.error('Error refreshing faculty forms', err)
+    }
+  }
+
+  useEffect(() => { refreshForms() }, [])
 
   const resetForm = () => {
     setFormTitle("")
@@ -87,7 +87,7 @@ export default function FacultyFeedbackPage() {
     setFormSemester("")
     setFormStatus(false)
     setFormDescription("")
-    setQuestions([{ id: 1, text: "", type: "rating" }])
+    setQuestions([{ id: 1, text: "" }])
     setIsEditing(false)
     setCurrentFormId(null)
   }
@@ -100,85 +100,143 @@ export default function FacultyFeedbackPage() {
   }
 
   const addQuestion = () => {
-    setQuestions([...questions, { id: Date.now(), text: "", type: "rating" }])
+    setQuestions([...questions, { id: Date.now(), text: "" }])
   }
 
   const removeQuestion = (id: number) => {
+    if (questions.length <= 1) return
     setQuestions(questions.filter((q) => q.id !== id))
   }
 
-  const updateQuestion = (id: number, field: string, value: string) => {
-    setQuestions(questions.map((q) => (q.id === id ? { ...q, [field]: value } : q)))
+  const updateQuestion = (id: number, text: string) => {
+    setQuestions(questions.map((q) => (q.id === id ? { ...q, text } : q)))
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formTitle || !formDepartment || !formSemester) {
       alert("Please fill in all required fields")
       return
     }
 
-    // If creating/updating to 'Active', check if another form is already active
-    if (formStatus) {
-        const otherActive = forms.find(f => f.status === "Active" && f.id !== currentFormId)
-        if (otherActive) {
-             // Automatically deactivate others if new one is set to Active
-             setForms(prev => prev.map(f => ({...f, status: "Inactive"})))
+    // Filter out empty questions
+    const filteredQuestions = questions
+      .filter(q => q.text.trim().length > 0)
+      .map(q => ({ text: q.text.trim(), type: 'rating' }))
+
+    if (filteredQuestions.length === 0) {
+      alert("Please add at least one question before saving the form")
+      return
+    }
+
+    try {
+      const payload: any = {
+        title: formTitle,
+        description: formDescription,
+        department_id: Number(formDepartment),
+        semester_id: Number(formSemester),
+        areas: [],
+        questions: filteredQuestions,
+        is_mandatory: false
+      }
+
+      console.debug('Faculty form payload:', payload)
+
+      if (isEditing && currentFormId) {
+        const res = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public/${currentFormId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        const json = await res.json()
+        if (json.success) {
+          if (formStatus) {
+            await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public/${currentFormId}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Active' }) })
+          }
+          await refreshForms()
+          resetForm()
+          setActiveTab('existing')
+        } else {
+          alert('Error updating form: ' + (json.message || 'unknown'))
         }
+      } else {
+        const res = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        const json = await res.json()
+        if (json.success) {
+          const newId = json.data?.id
+          if (formStatus && newId) {
+            await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public/${newId}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Active' }) })
+          }
+          await refreshForms()
+          resetForm()
+          setActiveTab('existing')
+        } else {
+          alert('Error creating form: ' + (json.message || 'unknown'))
+        }
+      }
+    } catch (err) {
+      console.error('Error saving faculty form', err)
+      alert('Error saving form')
     }
-
-    const formData: FeedbackForm = {
-      id: isEditing && currentFormId ? currentFormId : Date.now(),
-      title: formTitle,
-      department: formDepartment,
-      semester: formSemester,
-      status: formStatus ? "Active" : "Inactive",
-      createdAt: isEditing 
-        ? forms.find(f => f.id === currentFormId)?.createdAt || new Date().toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0],
-      description: formDescription,
-      questions: questions,
-    }
-
-    if (isEditing) {
-      setForms(prev => prev.map(f => f.id === currentFormId ? formData : f))
-    } else {
-      setForms(prev => [...prev, formData])
-    }
-
-    resetForm()
-    setActiveTab("existing")
   }
 
-  // --- Action Handlers ---
-
-  const handleEdit = (form: FeedbackForm) => {
-    setFormTitle(form.title)
-    setFormDepartment(form.department)
-    setFormSemester(form.semester)
-    setFormStatus(form.status === "Active")
-    setFormDescription(form.description || "")
-    setQuestions(form.questions.map(q => ({...q}))) // Deep copy questions
-    
-    setIsEditing(true)
-    setCurrentFormId(form.id)
-    setActiveTab("create")
+  const handleEdit = async (form: FeedbackForm) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public/${form.id}`)
+      const json = await res.json()
+      if (json.success && json.data) {
+        const fullForm = json.data
+        setFormTitle(fullForm.title)
+        setFormDepartment(String(fullForm.department_id || ''))
+        setFormSemester(String(fullForm.semester_id || ''))
+        setFormStatus(fullForm.status === "Active")
+        setFormDescription(fullForm.description || "")
+        
+        // Fetch and load questions
+        const allQs = fullForm.allQuestions || []
+        if (Array.isArray(allQs) && allQs.length > 0) {
+          setQuestions(allQs.map((q: any) => ({
+            id: q.id,
+            text: q.question_text || q.text || ''
+          })))
+        } else {
+          setQuestions([{ id: 1, text: "" }])
+        }
+        
+        setIsEditing(true)
+        setCurrentFormId(form.id)
+        setActiveTab("create")
+      } else {
+        alert('Error loading form details')
+      }
+    } catch (err) {
+      console.error('Error fetching form details:', err)
+      alert('Error loading form details')
+    }
   }
 
-  const handleToggleStatus = () => {
-    if (toggleStatusForm) {
-      const newStatus = toggleStatusForm.status === "Active" ? "Inactive" : "Active"
-      
-      setForms(forms.map(f => {
-        if (f.id === toggleStatusForm.id) {
-          return { ...f, status: newStatus }
-        }
-        // If activating this form, deactivate all others
-        if (newStatus === "Active") {
-            return { ...f, status: "Inactive" }
-        }
-        return f
-      }))
-      setToggleStatusForm(null)
+  const handleToggleStatus = async () => {
+    if (!toggleStatusForm) return
+    try {
+      const newStatus = toggleStatusForm.status === 'Active' ? 'Inactive' : 'Active'
+      const res = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public/${toggleStatusForm.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+      const json = await res.json()
+      if (json.success) {
+        await refreshForms()
+        setToggleStatusForm(null)
+      } else {
+        alert('Error toggling status: ' + (json.message || 'unknown'))
+      }
+    } catch (err) {
+      console.error('Error toggling faculty form status', err)
+      alert('Error toggling status')
     }
   }
 
@@ -215,18 +273,17 @@ export default function FacultyFeedbackPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[30%] min-w-[200px]">Title</TableHead>
-                      <TableHead className="w-[20%] min-w-[150px]">Department</TableHead>
-                      <TableHead className="w-[15%] min-w-[120px]">Semester</TableHead>
-                      <TableHead className="w-[10%] min-w-[100px]">Status</TableHead>
-                      <TableHead className="w-[10%] min-w-[100px]">Created</TableHead>
+                      <TableHead className="w-[40%] min-w-[250px]">Title</TableHead>
+                      <TableHead className="w-[15%] min-w-[100px]">Department</TableHead>
+                      <TableHead className="w-[15%] min-w-[100px]">Semester</TableHead>
+                      <TableHead className="w-[15%] min-w-[100px]">Status</TableHead>
                       <TableHead className="w-[15%] text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {forms.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
                           No feedback forms found.
                         </TableCell>
                       </TableRow>
@@ -234,8 +291,8 @@ export default function FacultyFeedbackPage() {
                       forms.map((form) => (
                         <TableRow key={form.id}>
                           <TableCell className="font-medium">{form.title}</TableCell>
-                          <TableCell>{form.department}</TableCell>
-                          <TableCell>{form.semester}</TableCell>
+                          <TableCell>{(form as any).department_name || '-'}</TableCell>
+                          <TableCell>{(form as any).semester_name || '-'}</TableCell>
                           <TableCell>
                             <Badge 
                               variant={form.status === "Active" ? "default" : "secondary"}
@@ -244,23 +301,22 @@ export default function FacultyFeedbackPage() {
                               {form.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>{form.createdAt}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                title="View"
-                                onClick={() => setViewForm(form)}
-                              >
+                              <Button variant="ghost" size="icon" title="View" onClick={async () => {
+                                try {
+                                  const res = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public/${form.id}`)
+                                  const json = await res.json()
+                                  if (json.success) setViewForm(json.data)
+                                  else alert('Error loading form details')
+                                } catch (err) {
+                                  console.error('Error loading form details', err)
+                                  alert('Error loading form details')
+                                }
+                              }}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                title="Edit"
-                                onClick={() => handleEdit(form)}
-                              >
+                              <Button variant="ghost" size="icon" title="Edit" onClick={() => handleEdit(form)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button 
@@ -288,14 +344,15 @@ export default function FacultyFeedbackPage() {
         <TabsContent value="create" className="w-full mt-0">
           <Card className="w-full border shadow-sm">
             <CardHeader>
-              <CardTitle>{isEditing ? "Edit Feedback Form" : "Create New Feedback Form"}</CardTitle>
+              <CardTitle>{isEditing ? "Edit Feedback Form" : "Create New Faculty Feedback Form"}</CardTitle>
               <CardDescription>
-                {isEditing ? "Update the existing form details below" : "Design a new faculty feedback form"}
+                Design a feedback form by adding questions for faculty evaluation.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Form Basic Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="title">Form Title</Label>
                   <Input 
@@ -306,7 +363,7 @@ export default function FacultyFeedbackPage() {
                     onChange={(e) => setFormTitle(e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="department">Department</Label>
                   <Select value={formDepartment} onValueChange={setFormDepartment}>
@@ -314,15 +371,15 @@ export default function FacultyFeedbackPage() {
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Information Science & Engineering">Information Science & Engineering</SelectItem>
-                      <SelectItem value="Computer Science & Engineering">Computer Science & Engineering</SelectItem>
-                      <SelectItem value="Electronics & Communication">Electronics & Communication</SelectItem>
-                      <SelectItem value="Mechanical Engineering">Mechanical Engineering</SelectItem>
-                      <SelectItem value="Civil Engineering">Civil Engineering</SelectItem>
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="semester">Semester</Label>
                   <Select value={formSemester} onValueChange={setFormSemester}>
@@ -330,31 +387,17 @@ export default function FacultyFeedbackPage() {
                       <SelectValue placeholder="Select semester" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Odd Semester 2023-24">Odd Semester 2023-24</SelectItem>
-                      <SelectItem value="Even Semester 2023-24">Even Semester 2023-24</SelectItem>
-                      <SelectItem value="Odd Semester 2024-25">Odd Semester 2024-25</SelectItem>
-                      <SelectItem value="Even Semester 2024-25">Even Semester 2024-25</SelectItem>
+                      {semesters.map((s) => (
+                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                 <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="description">Form Description</Label>
-                  <Textarea 
-                    id="description" 
-                    placeholder="Enter a description for this feedback form" 
-                    className="min-h-[120px] w-full resize-y"
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                  />
-                </div>
                 <div className="space-y-2 flex flex-col justify-end pb-2">
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30 h-[120px]">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30 h-[44px]">
                     <div className="space-y-0.5">
-                      <Label htmlFor="status" className="text-base">Active Status</Label>
-                      <p className="text-sm text-muted-foreground">Enable to make visible</p>
+                      <Label htmlFor="status" className="text-sm">Active</Label>
                     </div>
                     <Switch 
                       id="status" 
@@ -365,42 +408,55 @@ export default function FacultyFeedbackPage() {
                 </div>
               </div>
 
-              <div className="space-y-6 pt-6 border-t">
+              <div className="space-y-2">
+                <Label htmlFor="description">Form Description</Label>
+                <Textarea 
+                  id="description" 
+                  placeholder="Enter a description for this feedback form" 
+                  className="min-h-[80px] w-full resize-y"
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                />
+              </div>
+
+              {/* Questions Section */}
+              <div className="space-y-4 pt-6 border-t">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xl font-semibold">Questions</Label>
-                  <Button onClick={addQuestion} className="gap-2">
-                    <PlusCircle className="h-4 w-4" />
+                  <h3 className="text-lg font-semibold">Questions ({questions.filter(q => q.text.trim().length > 0).length})</h3>
+                  <Button onClick={addQuestion} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
                     Add Question
                   </Button>
                 </div>
 
                 <div className="space-y-4">
-                  {questions.map((question, index) => (
-                    <div key={question.id} className="border p-6 rounded-lg space-y-4 bg-card hover:border-primary/50 transition-colors">
-                      <div className="flex items-center justify-between border-b pb-3">
-                        <h3 className="font-medium text-sm uppercase tracking-wider text-muted-foreground">Question {index + 1}</h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                  {questions.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
+                      No questions added yet. Click "Add Question" to get started.
+                    </div>
+                  ) : (
+                    questions.map((question, index) => (
+                      <div key={question.id} className="flex items-end gap-4 p-4 border rounded-lg bg-muted/10">
+                        <div className="flex-grow space-y-2">
+                          <Label className="text-sm font-medium">Question {index + 1}</Label>
+                          <Input
+                            value={question.text}
+                            onChange={(e) => updateQuestion(question.id, e.target.value)}
+                            placeholder="Enter your question here..."
+                          />
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-red-500 hover:text-red-600"
                           onClick={() => removeQuestion(question.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          disabled={questions.length === 1}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Remove
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={`question-${question.id}`}>Question Text</Label>
-                        <Input
-                          id={`question-${question.id}`}
-                          placeholder="Type your question here..."
-                          value={question.text}
-                          onChange={(e) => updateQuestion(question.id, "text", e.target.value)}
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -428,11 +484,6 @@ export default function FacultyFeedbackPage() {
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>{viewForm?.title}</DialogTitle>
-            <DialogDescription className="flex items-center gap-2 mt-2">
-              <Badge variant="outline">{viewForm?.department}</Badge>
-              <span>•</span>
-              <span>{viewForm?.semester}</span>
-            </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div className="space-y-2">
@@ -440,16 +491,18 @@ export default function FacultyFeedbackPage() {
               <p className="text-sm">{viewForm?.description || "No description provided."}</p>
             </div>
             
-            <div className="space-y-3">
-              <Label className="text-sm text-muted-foreground uppercase">Questions ({viewForm?.questions.length})</Label>
-              <div className="border rounded-md divide-y">
-                {viewForm?.questions.map((q, i) => (
-                  <div key={q.id} className="p-3 text-sm flex justify-between items-start gap-4">
-                    <span>{i + 1}. {q.text}</span>
-                    {/* Removed explicit type badge since all are ratings now */}
-                  </div>
-                ))}
-              </div>
+            <div className="space-y-4">
+              <Label className="text-sm text-muted-foreground uppercase">Questions ({(viewForm as any)?.allQuestions?.length || 0})</Label>
+              {((viewForm as any)?.allQuestions && Array.isArray((viewForm as any)?.allQuestions) && (viewForm as any)?.allQuestions.length > 0) ? (
+                <ul className="space-y-3">
+                  {(viewForm as any)?.allQuestions.map((q: any, i: number) => (
+                    <li key={q.id || i} className="text-sm flex gap-4 p-3 border rounded-lg bg-muted/10">
+                      <span className="text-muted-foreground font-medium min-w-fit">{i + 1}.</span>
+                      <span>{q.question_text || q.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : <div className="text-sm text-muted-foreground italic">No questions available.</div>}
             </div>
           </div>
           <DialogFooter>
@@ -457,8 +510,6 @@ export default function FacultyFeedbackPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Toggle Status Confirmation Dialog */}
       <Dialog open={!!toggleStatusForm} onOpenChange={(open) => !open && setToggleStatusForm(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -475,7 +526,7 @@ export default function FacultyFeedbackPage() {
               Cancel
             </Button>
             <Button 
-              variant="default"
+              variant={confirmActionVariant as any} 
               onClick={handleToggleStatus}
             >
               {confirmActionLabel}
@@ -483,7 +534,6 @@ export default function FacultyFeedbackPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   )
 }

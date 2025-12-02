@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState ,useEffect} from "react"
+import { API_BASE_URL } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/admin/card"
 import { Button } from "@/components/admin/button"
 import { Input } from "@/components/admin/input"
@@ -144,22 +145,13 @@ const DEFAULT_QUESTIONS: Question[] = [
 ]
 
 
-const initialForms: FeedbackForm[] = [
-  {
-    id: 1,
-    title: "Graduate Exit Survey - 2024",
-    batch: "2020-2024",
-    status: "Active",
-    createdAt: "2024-05-15",
-    description: "Survey for graduating students to assess program outcomes and facilities.",
-    areas: DEFAULT_AREAS,
-    questions: DEFAULT_QUESTIONS,
-  },
-]
 
 export default function GraduateExitSurveyPage() {
   const [activeTab, setActiveTab] = useState("existing")
-  const [forms, setForms] = useState<FeedbackForm[]>(initialForms)
+  const [forms, setForms] = useState<FeedbackForm[]>([])
+
+  // Lookups
+  const [semesters, setSemesters] = useState<Array<any>>([])
 
   // --- Form State ---
   const [isEditing, setIsEditing] = useState(false)
@@ -181,6 +173,29 @@ export default function GraduateExitSurveyPage() {
   // --- Dialog States ---
   const [viewForm, setViewForm] = useState<FeedbackForm | null>(null)
   const [toggleStatusForm, setToggleStatusForm] = useState<FeedbackForm | null>(null)
+
+  // Load forms and semesters
+  const refreshForms = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/public`)
+      const json = await res.json()
+      if (json.success) {
+        setForms(json.data || [])
+        const semMap: Record<string,string> = {}
+        if (Array.isArray(json.data)) {
+          json.data.forEach((f: any) => { if (f.semester_id && f.semester_name) semMap[String(f.semester_id)] = f.semester_name })
+        }
+        const semMapEntries = Object.entries(semMap)
+        const sems = semMapEntries.map(([id,name]) => ({ id: Number(id), name }))
+        setSemesters(sems)
+      }
+    } catch (err) {
+      console.error('Error refreshing graduate forms', err)
+    }
+  }
+  
+  // Load once on mount
+  useEffect(() => { refreshForms() }, [])
 
   // --- Helper Functions ---
 
@@ -243,87 +258,107 @@ export default function GraduateExitSurveyPage() {
 
   // --- CRUD Operations ---
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formTitle || !formBatch) {
       alert("Please fill in all required fields")
       return
     }
 
-    // Logic to handle single active form
-    let updatedForms = [...forms];
-    const newStatus = formStatus ? "Active" : "Inactive";
-
-    // If creating/updating to 'Active', deactivate others
-    if (newStatus === "Active") {
-      updatedForms = updatedForms.map(f => ({
-        ...f,
-        status: f.id === currentFormId ? "Active" : "Inactive"
-      }));
-    }
-
-    const formData: FeedbackForm = {
-      id: isEditing && currentFormId ? currentFormId : Date.now(),
-      title: formTitle,
-      batch: formBatch,
-      status: newStatus,
-      createdAt: isEditing 
-        ? forms.find(f => f.id === currentFormId)?.createdAt || new Date().toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0],
-      description: formDescription,
-      areas: areas,
-      questions: questions,
-    }
-
-    if (isEditing) {
-      // If updating status, ensure others are deactivated
-       if (formStatus) {
-         setForms(prev => prev.map(f => {
-             if (f.id === currentFormId) return formData;
-             return { ...f, status: "Inactive" };
-         }));
-      } else {
-         setForms(prev => prev.map(f => f.id === currentFormId ? formData : f));
+    try {
+      const payload: any = {
+        title: formTitle,
+        description: formDescription,
+        batch_start_year: Number(formBatch),
+        batch_end_year: Number(formBatch) + 4,
+        areas: areas.map(a => ({ name: a.name, isMandatory: a.isMandatory, questions: questions.filter(q => q.areaId === a.id).map(q => ({ text: q.text, type: 'rating' })) })),
+        is_mandatory: false
       }
-    } else {
-       if (formStatus) {
-         setForms(prev => [...prev.map(f => ({...f, status: "Inactive" as const})), formData]);
-      } else {
-         setForms(prev => [...prev, formData]);
-      }
-    }
 
-    resetForm()
-    setActiveTab("existing")
+      if (isEditing && currentFormId) {
+        const res = await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/public/${currentFormId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        const json = await res.json()
+        if (json.success) {
+          if (formStatus) await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/public/${currentFormId}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Active' }) })
+          await refreshForms()
+          resetForm()
+          setActiveTab('existing')
+        } else alert('Error updating survey: ' + (json.message || 'unknown'))
+      } else {
+        const res = await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/public`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        const json = await res.json()
+        if (json.success) {
+          const newId = json.data?.id
+          if (formStatus && newId) await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/public/${newId}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Active' }) })
+          await refreshForms()
+          resetForm()
+          setActiveTab('existing')
+        } else alert('Error creating survey: ' + (json.message || 'unknown'))
+      }
+    } catch (err) {
+      console.error('Error saving graduate survey', err)
+      alert('Error saving survey')
+    }
   }
 
-  const handleEdit = (form: FeedbackForm) => {
-    setFormTitle(form.title)
-    setFormBatch(form.batch)
-    setFormStatus(form.status === "Active")
-    setFormDescription(form.description || "")
-    setAreas(form.areas.map(a => ({...a})))
-    setQuestions(form.questions.map(q => ({...q})))
-    
-    setIsEditing(true)
-    setCurrentFormId(form.id)
-    setActiveTab("create")
+  const handleEdit = async (form: FeedbackForm) => {
+    try {
+      // Fetch full form details with areas and questions
+      const res = await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/public/${form.id}`)
+      const json = await res.json()
+      if (json.success && json.data) {
+        const fullForm = json.data
+        setFormTitle(fullForm.title)
+        setFormBatch(String(fullForm.batch_start_year || ''))
+        setFormStatus(fullForm.status === "Active")
+        setFormDescription(fullForm.description || "")
+        
+        if (fullForm.areas && Array.isArray(fullForm.areas)) {
+          setAreas(fullForm.areas.map((a: any) => ({
+            id: String(a.id),
+            name: a.area_name || a.name || '',
+            isMandatory: a.is_mandatory !== false
+          })))
+          const allQs = fullForm.allQuestions || fullForm.areas.flatMap((a: any) => a.questions || [])
+          setQuestions(allQs.map((q: any) => ({
+            id: q.id,
+            text: q.question_text || q.text || '',
+            areaId: String(q.area_id),
+            type: q.question_type || 'rating'
+          })))
+        } else {
+          setAreas(DEFAULT_AREAS)
+          setQuestions(DEFAULT_QUESTIONS)
+        }
+        
+        setIsEditing(true)
+        setCurrentFormId(form.id)
+        setActiveTab("create")
+      } else {
+        alert('Error loading form details')
+      }
+    } catch (err) {
+      console.error('Error fetching form details:', err)
+      alert('Error loading form details')
+    }
   }
 
-  const handleToggleStatus = () => {
-    if (toggleStatusForm) {
-      const newStatus = toggleStatusForm.status === "Active" ? "Inactive" : "Active"
-      
-      setForms(forms.map(f => {
-        if (f.id === toggleStatusForm.id) {
-          return { ...f, status: newStatus }
-        }
-        // If activating this form, deactivate all others
-        if (newStatus === "Active") {
-            return { ...f, status: "Inactive" }
-        }
-        return f
-      }))
-      setToggleStatusForm(null)
+  const handleToggleStatus = async () => {
+    if (!toggleStatusForm) return
+    try {
+      const newStatus = toggleStatusForm.status === 'Active' ? 'Inactive' : 'Active'
+      const res = await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/public/${toggleStatusForm.id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) })
+      const json = await res.json()
+      if (json.success) {
+        await refreshForms()
+        setToggleStatusForm(null)
+      } else alert('Error toggling status: ' + (json.message || 'unknown'))
+    } catch (err) {
+      console.error('Error toggling graduate survey status', err)
+      alert('Error toggling status')
     }
   }
 
@@ -378,7 +413,7 @@ export default function GraduateExitSurveyPage() {
                       forms.map((form) => (
                         <TableRow key={form.id}>
                           <TableCell className="font-medium">{form.title}</TableCell>
-                          <TableCell>{form.batch}</TableCell>
+                          <TableCell>{(form as any).batch_start_year ? `${(form as any).batch_start_year}-${(form as any).batch_end_year}` : '-'}</TableCell>
                           <TableCell>
                             <Badge 
                               variant={form.status === "Active" ? "default" : "secondary"}
@@ -387,10 +422,30 @@ export default function GraduateExitSurveyPage() {
                               {form.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>{form.createdAt}</TableCell>
+                          <TableCell>
+                            {(form as any).created_at 
+                              ? new Date((form as any).created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                              : form.createdAt
+                              ? new Date(form.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                              : '-'
+                            }
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" title="View" onClick={() => setViewForm(form)}>
+                              <Button variant="ghost" size="icon" title="View" onClick={async () => {
+                                try {
+                                  const res = await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/public/${form.id}`)
+                                  const json = await res.json()
+                                  if (json.success && json.data) {
+                                    setViewForm(json.data)
+                                  } else {
+                                    alert('Error loading form details')
+                                  }
+                                } catch (err) {
+                                  console.error('Error loading form details', err)
+                                  alert('Error loading form details')
+                                }
+                              }}>
                                 <Eye className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="icon" title="Edit" onClick={() => handleEdit(form)}>
@@ -442,10 +497,11 @@ export default function GraduateExitSurveyPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="batch">Batch (Year)</Label>
+                  <Label htmlFor="batch">Batch Starting Year</Label>
                   <Input 
                     id="batch" 
-                    placeholder="e.g. 2020-2024" 
+                    placeholder="Enter batch starting year (e.g. 2023)" 
+                    type="number"
                     className="w-full"
                     value={formBatch}
                     onChange={(e) => setFormBatch(e.target.value)}
@@ -593,7 +649,7 @@ export default function GraduateExitSurveyPage() {
           <DialogHeader>
             <DialogTitle>{viewForm?.title}</DialogTitle>
             <DialogDescription className="flex items-center gap-2 mt-2">
-              <Badge variant="outline">Batch: {viewForm?.batch}</Badge>
+              <Badge variant="outline">Batch: {(viewForm as any)?.batch_start_year ? `${(viewForm as any)?.batch_start_year} - ${(viewForm as any)?.batch_end_year}` : '-'}</Badge>
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-6">
@@ -604,26 +660,29 @@ export default function GraduateExitSurveyPage() {
             
             <div className="space-y-4">
               <Label className="text-sm text-muted-foreground uppercase">Sections & Questions</Label>
-              {viewForm?.areas.map(area => (
-                  <div key={area.id} className="border rounded-md p-4 bg-muted/10">
+              {(viewForm as any)?.areas?.map((area: any) => {
+                const areaQuestions = ((viewForm as any)?.allQuestions || []).filter((q: any) => q.area_id === area.id);
+                return (
+                  <div key={area.id || area.name} className="border rounded-md p-4 bg-muted/10">
                       <div className="flex justify-between items-center mb-3">
-                          <h4 className="font-semibold text-sm">{area.name}</h4>
-                          <Badge variant={area.isMandatory ? "default" : "outline"} className="text-[10px]">
-                              {area.isMandatory ? "Mandatory" : "Optional"}
+                          <h4 className="font-semibold text-sm">{area.area_name || area.name}</h4>
+                          <Badge variant={area.is_mandatory !== false ? "default" : "outline"} className="text-[10px]">
+                              {area.is_mandatory !== false ? "Mandatory" : "Optional"}
                           </Badge>
                       </div>
                       <ul className="space-y-3">
-                          {viewForm.questions.filter(q => q.areaId === area.id).map((q, i) => (
-                              <li key={q.id} className="text-sm flex justify-between items-start gap-4 pl-4 border-l-2 border-muted">
-                                  <span>{q.text}</span>
+                          {areaQuestions.map((q: any, i: number) => (
+                              <li key={q.id || i} className="text-sm flex justify-between items-start gap-4 pl-4 border-l-2 border-muted">
+                                  <span>{q.question_text || q.text}</span>
                               </li>
                           ))}
-                          {viewForm.questions.filter(q => q.areaId === area.id).length === 0 && (
+                          {areaQuestions.length === 0 && (
                               <li className="text-xs text-muted-foreground italic">No questions in this section.</li>
                           )}
                       </ul>
                   </div>
-              ))}
+                );
+              })}
             </div>
           </div>
           <DialogFooter>
