@@ -600,14 +600,17 @@ router.get('/export/:form_id/pdf', async (req, res) => {
       doc.moveDown(0.2);
 
       // Fetch answers for this response
+
+      // Fetch questions for the form and left join answers for this response so text answers
+      // (and unanswered questions) are also included in the PDF output.
       const [answers] = await pool.execute(`
         SELECT afq.question_text, afq.question_type, ad.answer_text, ad.answer_rating, aqo.option_text
-        FROM academic_answer_details ad
-        LEFT JOIN academic_feedback_questions afq ON ad.question_id = afq.id
+        FROM academic_feedback_questions afq
+        LEFT JOIN academic_answer_details ad ON afq.id = ad.question_id AND ad.response_id = ?
         LEFT JOIN academic_question_options aqo ON ad.answer_option_id = aqo.id
-        WHERE ad.response_id = ?
+        WHERE afq.form_id = ?
         ORDER BY afq.sort_order
-      `, [r.response_id]);
+      `, [r.response_id, form_id]);
 
       for (const a of answers) {
         let answerText = '';

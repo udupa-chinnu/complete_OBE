@@ -9,12 +9,14 @@ import { ArrowLeft, Star, MessageSquare } from "lucide-react"
 
 export default function FeedbackPage() {
   const router = useRouter()
-  const [feedbackType, setFeedbackType] = useState<"faculty" | "general" | null>(null)
+  const [feedbackType, setFeedbackType] = useState<"faculty" | "institution" | "graduate" | null>(null)
   const [selectedFaculty, setSelectedFaculty] = useState<string | number>("")
   const [answersMap, setAnswersMap] = useState<Record<string, any>>({})
   const [comments, setComments] = useState("")
   const [faculties, setFaculties] = useState<Array<any>>([])
-  const [activeForm, setActiveForm] = useState<any>(null)
+  const [activeFacultyForm, setActiveFacultyForm] = useState<any>(null)
+  const [activeInstitutionForm, setActiveInstitutionForm] = useState<any>(null)
+  const [activeGraduateForm, setActiveGraduateForm] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [ratings, setRatings] = useState<Record<string | number, number>>({})
 
@@ -25,6 +27,8 @@ export default function FeedbackPage() {
         const fRes = await fetch(`${API_BASE_URL}/faculties/dropdown/active`)
         const fJson = await fRes.json()
         if (fJson.success) setFaculties(fJson.data)
+
+        // load active faculty feedback form
         const listRes = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public`)
         const listJson = await listRes.json()
         if (listJson.success && Array.isArray(listJson.data)) {
@@ -32,8 +36,40 @@ export default function FeedbackPage() {
           if (active) {
             const detailRes = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/public/${active.id}`)
             const detailJson = await detailRes.json()
-            if (detailJson.success) setActiveForm(detailJson.data)
+            if (detailJson.success) setActiveFacultyForm(detailJson.data)
           }
+        }
+
+        // load active institution feedback form
+        try {
+          const instListRes = await fetch(`${API_BASE_URL}/academic-swo/institution-feedback/public`)
+          const instListJson = await instListRes.json()
+          if (instListJson.success && Array.isArray(instListJson.data)) {
+            const activeInst = instListJson.data.find((f: any) => f.status === 'Active')
+            if (activeInst) {
+              const instDetailRes = await fetch(`${API_BASE_URL}/academic-swo/institution-feedback/public/${activeInst.id}`)
+              const instDetailJson = await instDetailRes.json()
+              if (instDetailJson.success) setActiveInstitutionForm(instDetailJson.data)
+            }
+          }
+        } catch (e) {
+          console.warn('No active institution form or fetch error', e)
+        }
+
+        // load active graduate exit survey form
+        try {
+          const gradListRes = await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/public`)
+          const gradListJson = await gradListRes.json()
+          if (gradListJson.success && Array.isArray(gradListJson.data)) {
+            const activeGrad = gradListJson.data.find((f: any) => f.status === 'Active')
+            if (activeGrad) {
+              const gradDetailRes = await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/public/${activeGrad.id}`)
+              const gradDetailJson = await gradDetailRes.json()
+              if (gradDetailJson.success) setActiveGraduateForm(gradDetailJson.data)
+            }
+          }
+        } catch (e) {
+          console.warn('No active graduate form or fetch error', e)
         }
       } catch (err) {
         console.error('Error loading feedback form or faculties', err)
@@ -52,46 +88,130 @@ export default function FeedbackPage() {
   }
 
   const handleSubmit = async () => {
-    if (!activeForm) return alert('No active form available')
-    if (!selectedFaculty) return alert('Please select a faculty member')
-
-    // Build answers array from areas/questions
-    const answers: any[] = []
-    for (const area of (activeForm.areas || [])) {
-      for (const q of (area.questions || [])) {
-        const stored = answersMap[String(q.id)]
-        if (q.question_type === 'rating') {
-          answers.push({ question_id: q.id, answer_rating: stored?.answer_rating ?? null })
-        } else {
-          answers.push({ question_id: q.id, answer_text: stored?.answer_text ?? '' })
-        }
-      }
-    }
-
-    setLoading(true)
+    // Unified submit handler for faculty, institution, and graduate forms
     try {
-      const payload = {
-        respondent_user_id: 1, // placeholder; replace with actual logged-in user id when auth is enabled
-        respondent_type: 'student',
-        faculty_id: Number(selectedFaculty),
-        answers
+      setLoading(true)
+
+      if (feedbackType === 'faculty') {
+        if (!activeFacultyForm) return alert('No active faculty form available')
+        if (!selectedFaculty) return alert('Please select a faculty member')
+
+        const answers: any[] = []
+        
+        // Handle both area-based and flat question models
+        const areasToProcess = (activeFacultyForm.areas && activeFacultyForm.areas.length > 0)
+          ? activeFacultyForm.areas
+          : [{ id: 'flat', area_name: activeFacultyForm.title || 'General', questions: activeFacultyForm.allQuestions || activeFacultyForm.questions || [] }]
+        
+        for (const area of areasToProcess) {
+          for (const q of (area.questions || [])) {
+            const stored = answersMap[String(q.id)]
+            if (q.question_type === 'rating') {
+              const rating = stored?.answer_rating ?? ratings[String(q.id)] ?? null
+              if (rating === null || rating === undefined) return alert('Please answer all rating questions before submitting')
+              answers.push({ question_id: q.id, answer_rating: rating })
+            } else {
+              const text = stored?.answer_text || ''
+              if (!text.trim()) return alert('Please answer all questions before submitting')
+              answers.push({ question_id: q.id, answer_text: text })
+            }
+          }
+        }
+
+        const payload = {
+          respondent_user_id: 1,
+          respondent_type: 'student',
+          faculty_id: Number(selectedFaculty),
+          answers
+        }
+
+        const res = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/${activeFacultyForm.id}/submit`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        })
+        const json = await res.json()
+        if (json.success) {
+          alert('Feedback submitted successfully!')
+          setFeedbackType(null)
+          setSelectedFaculty('')
+          setAnswersMap({})
+          setRatings({})
+          setComments('')
+        } else alert('Error submitting feedback: ' + (json.message || 'unknown'))
+        return
       }
 
-      const res = await fetch(`${API_BASE_URL}/academic-swo/faculty-feedback/${activeForm.id}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
+      if (feedbackType === 'institution') {
+        if (!activeInstitutionForm) return alert('No active institution form available')
 
-      const json = await res.json()
-      if (json.success) {
-        alert('Feedback submitted successfully!')
-        setFeedbackType(null)
-        setSelectedFaculty('')
-        setAnswersMap({})
-        setComments('')
-      } else {
-        alert('Error submitting feedback: ' + (json.message || 'unknown'))
+        const answers: any[] = []
+        for (const area of (activeInstitutionForm.areas || [])) {
+          const areaOptional = area.is_mandatory === false
+          for (const q of (area.questions || [])) {
+            const stored = answersMap[String(q.id)]
+            // all institution questions are rating type in UI
+            const rating = stored?.answer_rating ?? ratings[String(q.id)] ?? null
+            if ((rating === null || rating === undefined) && !areaOptional) return alert('Please answer all mandatory questions before submitting')
+            if (rating !== null && rating !== undefined) answers.push({ question_id: q.id, answer_rating: rating })
+          }
+        }
+
+        const payload = { respondent_user_id: 1, respondent_type: 'student', answers }
+        const res = await fetch(`${API_BASE_URL}/academic-swo/institution-feedback/${activeInstitutionForm.id}/submit`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        })
+        const json = await res.json()
+        if (json.success) {
+          alert('Institution feedback submitted successfully!')
+          setFeedbackType(null)
+          setAnswersMap({})
+          setRatings({})
+          setComments('')
+        } else alert('Error submitting feedback: ' + (json.message || 'unknown'))
+        return
+      }
+
+      if (feedbackType === 'graduate') {
+        if (!activeGraduateForm) return alert('No active graduate exit survey available')
+
+        const ratingAreaNames = new Set([
+          'Quality of Instructions & Support',
+          'Facilities Offered for Academics',
+          'Academic Services',
+          'General Facilities',
+          'Graduation Feedback (Capabilities)'
+        ])
+
+        const answers: any[] = []
+        for (const area of (activeGraduateForm.areas || [])) {
+          const areaOptional = area.is_mandatory === false
+          const isRatingArea = ratingAreaNames.has((area.area_name || area.name || '').trim())
+          for (const q of (area.questions || [])) {
+            const stored = answersMap[String(q.id)]
+            if (isRatingArea) {
+              const rating = stored?.answer_rating ?? ratings[String(q.id)] ?? null
+              if ((rating === null || rating === undefined) && !areaOptional) return alert('Please answer all mandatory rating questions before submitting')
+              if (rating !== null && rating !== undefined) answers.push({ question_id: q.id, answer_rating: rating })
+            } else {
+              const text = stored?.answer_text || ''
+              if (!text.trim() && !areaOptional) return alert('Please answer all mandatory text questions before submitting')
+              if (text && text.trim()) answers.push({ question_id: q.id, answer_text: text })
+            }
+          }
+        }
+
+        const payload = { respondent_user_id: 1, respondent_type: 'graduate', batch_year: activeGraduateForm.batch_start_year, answers }
+        const res = await fetch(`${API_BASE_URL}/academic-swo/graduate-exit-survey/${activeGraduateForm.id}/submit`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        })
+        const json = await res.json()
+        if (json.success) {
+          alert('Graduate exit survey submitted successfully!')
+          setFeedbackType(null)
+          setAnswersMap({})
+          setRatings({})
+          setComments('')
+        } else alert('Error submitting feedback: ' + (json.message || 'unknown'))
+        return
       }
     } catch (err) {
       console.error(err)
@@ -121,7 +241,7 @@ export default function FeedbackPage() {
 
         {/* Main Content */}
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="cursor-pointer hover:shadow-lg transition-all" onClick={() => setFeedbackType("faculty")}>
               <CardContent className="pt-6">
                 <div className="text-center">
@@ -132,12 +252,22 @@ export default function FeedbackPage() {
               </CardContent>
             </Card>
 
-            <Card className="cursor-pointer hover:shadow-lg transition-all" onClick={() => setFeedbackType("general")}>
+            <Card className="cursor-pointer hover:shadow-lg transition-all" onClick={() => setFeedbackType("institution")}>
               <CardContent className="pt-6">
                 <div className="text-center">
                   <MessageSquare className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                  <CardTitle className="text-lg mb-2">General Feedback</CardTitle>
-                  <CardDescription>Share general feedback about college, facilities, and services</CardDescription>
+                  <CardTitle className="text-lg mb-2">Institution Feedback</CardTitle>
+                  <CardDescription>Provide feedback for the institution (areas & services)</CardDescription>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-all" onClick={() => setFeedbackType("graduate")}>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <MessageSquare className="w-12 h-12 text-purple-600 mx-auto mb-4" />
+                  <CardTitle className="text-lg mb-2">Graduate Exit Survey</CardTitle>
+                  <CardDescription>Graduating student exit survey (if applicable)</CardDescription>
                 </div>
               </CardContent>
             </Card>
@@ -158,7 +288,7 @@ export default function FeedbackPage() {
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-gray-800">
-                {feedbackType === "faculty" ? "Faculty Feedback" : "General Feedback"}
+                {feedbackType === "faculty" ? "Faculty Feedback" : feedbackType === "institution" ? "Institution Feedback" : "Graduate Exit Survey"}
               </h1>
               <p className="text-sm text-gray-600">Your feedback helps us improve</p>
             </div>
@@ -188,14 +318,18 @@ export default function FeedbackPage() {
                   </select>
                 </div>
 
-                {selectedFaculty && activeForm && (
+                {selectedFaculty && activeFacultyForm && (
                   <div className="space-y-6 pt-6 border-t">
-                    {activeForm.areas.map((area: any) => (
+                    {(
+                      (activeFacultyForm.areas && activeFacultyForm.areas.length > 0)
+                      ? activeFacultyForm.areas
+                      : [{ id: 'flat', area_name: activeFacultyForm.title || 'General', questions: activeFacultyForm.allQuestions || activeFacultyForm.questions || [] }]
+                    ).map((area: any) => (
                       <div key={area.id} className="space-y-4">
                         <h3 className="font-semibold">{area.area_name}</h3>
-                        {area.questions.map((q: any) => (
+                        {(area.questions || []).map((q: any) => (
                           <div key={q.id} className="space-y-2">
-                            <label className="block text-sm font-medium text-gray-700">{q.question_text}</label>
+                            <label className="block text-sm font-medium text-gray-700">{q.question_text || q.text}</label>
                             {q.question_type === 'rating' && (
                               <div className="flex items-center space-x-2">
                                 {[1,2,3,4,5].map((n) => (
@@ -218,41 +352,79 @@ export default function FeedbackPage() {
               </>
             )}
 
-            {feedbackType === "general" && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">Feedback Category</label>
-                  <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option>Academics</option>
-                    <option>Infrastructure</option>
-                    <option>Facilities</option>
-                    <option>Events & Activities</option>
-                    <option>Administration</option>
-                    <option>Canteen & Food</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">Overall Rating</label>
-                  <div className="flex items-center space-x-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        onClick={() => handleRating("overall", star)}
-                        className="transition-transform hover:scale-110"
-                      >
-                        <Star
-                          className={`w-8 h-8 ${
-                            ratings["overall"] && ratings["overall"] >= star
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      </button>
-                    ))}
+            {feedbackType === "institution" && (
+              <div className="space-y-6 pt-6 border-t">
+                {!activeInstitutionForm && <div className="text-sm text-muted-foreground">No active institution feedback is available.</div>}
+                {activeInstitutionForm && activeInstitutionForm.areas.map((area: any) => (
+                  <div key={area.id} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">{area.area_name}</h3>
+                      <span className="text-xs text-gray-500">{area.is_mandatory === false ? 'Optional' : 'Mandatory'}</span>
+                    </div>
+                    <div className="space-y-2">
+                      { (area.questions || []).map((q: any) => (
+                        <div key={q.id} className="space-y-1">
+                          <label className="block text-sm font-medium text-gray-700">{q.question_text}</label>
+                          <div className="flex items-center space-x-2">
+                            {[1,2,3,4,5].map((n) => (
+                              <button key={n} onClick={() => handleRating(q.id, n)} className="transition-transform hover:scale-110">
+                                <Star className={`w-7 h-7 ${ratings[String(q.id)] && ratings[String(q.id)] >= n ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                              </button>
+                            ))}
+                            {ratings[String(q.id)] && <span className="text-sm font-semibold text-gray-700 ml-2">{ratings[String(q.id)]}/5</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ))}
+              </div>
+            )}
+
+            {feedbackType === "graduate" && (
+              <div className="space-y-6 pt-6 border-t">
+                {!activeGraduateForm && <div className="text-sm text-muted-foreground">No active graduate exit survey is available.</div>}
+                {activeGraduateForm && (
+                  <div className="space-y-4">
+                    {activeGraduateForm.areas.map((area: any) => {
+                      const ratingAreaNames = new Set([
+                        'Quality of Instructions & Support',
+                        'Facilities Offered for Academics',
+                        'Academic Services',
+                        'General Facilities',
+                        'Graduation Feedback (Capabilities)'
+                      ])
+                      const isRatingArea = ratingAreaNames.has((area.area_name || area.name || '').trim())
+                      return (
+                        <div key={area.id} className="border rounded-md p-4 bg-white">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-sm">{area.area_name || area.name}</h4>
+                            <span className="text-xs text-gray-500">{area.is_mandatory === false ? 'Optional' : 'Mandatory'}</span>
+                          </div>
+                          <div className="space-y-3">
+                            {(area.questions || []).map((q: any) => (
+                              <div key={q.id}>
+                                <label className="block text-sm font-medium text-gray-700">{q.question_text}</label>
+                                {isRatingArea ? (
+                                  <div className="flex items-center space-x-2 mt-1">
+                                    {[1,2,3,4,5].map((n) => (
+                                      <button key={n} onClick={() => handleRating(q.id, n)} className="transition-transform hover:scale-110">
+                                        <Star className={`w-7 h-7 ${ratings[String(q.id)] && ratings[String(q.id)] >= n ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                                      </button>
+                                    ))}
+                                    {ratings[String(q.id)] && <span className="text-sm font-semibold text-gray-700 ml-2">{ratings[String(q.id)]}/5</span>}
+                                  </div>
+                                ) : (
+                                  <textarea value={answersMap[String(q.id)]?.answer_text || ''} onChange={(e) => handleTextAnswer(q.id, e.target.value)} className="w-full px-3 py-2 border rounded" rows={3} />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
